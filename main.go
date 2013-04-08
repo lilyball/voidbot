@@ -53,7 +53,7 @@ func main() {
 
 	fmt.Println("Connecting...")
 	conn.SSL = true
-	err := conn.Connect("chat.freenode.net", "redacted")
+	err := conn.Connect("chat.freenode.net", "voidbot:redacted")
 	if err != nil {
 		fmt.Println("error:", err)
 		quit <- true
