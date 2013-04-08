@@ -112,7 +112,9 @@ func handleURL(conn *irc.Conn, db *sql.DB, line *irc.Line, dst string, url strin
 		delta := now.Sub(timestamp)
 		lastSeen := formatDuration(delta)
 
-		conn.Notice(dst, fmt.Sprintf("URL '%s' was last seen %s ago by %s (%d total)", url, lastSeen, nick, count))
+		msg := fmt.Sprintf("URL '%s' was last seen %s ago by %s (%d total)", url, lastSeen, nick, count)
+		fmt.Printf("--> NOTICE[%s]: %s", dst, msg)
+		conn.Notice(dst, msg)
 	}
 }
 
