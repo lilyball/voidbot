@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
 	"os"
 	"sync"
@@ -18,14 +19,14 @@ var (
 	pluginTeardown setupInfo
 )
 
-func RegisterPluginSetup(f func(*irc.Conn) error) {
+func RegisterPluginSetup(f func(*irc.Conn, event.EventRegistry) error) {
 	pluginSetup.Lock()
 	defer pluginSetup.Unlock()
 	if pluginSetup.Done != nil {
 		panic("setup was already invoked")
 	}
 	pluginSetup.Funcs = append(pluginSetup.Funcs, func(args ...interface{}) error {
-		return f(args[0].(*irc.Conn))
+		return f(args[0].(*irc.Conn), args[1].(event.EventRegistry))
 	})
 }
 
@@ -40,18 +41,26 @@ func RegisterPluginTeardown(f func() error) {
 	})
 }
 
+var pluginER event.EventRegistry
+
 func invokePluginSetup(conn *irc.Conn) {
 	invoke(&pluginSetup, "setup", func() {
+		pluginER = event.NewRegistry()
+	}, func() {
 		invokePluginTeardown()
 		os.Exit(1)
-	}, conn)
+	}, func(f func(...interface{}) error) error {
+		return f(conn, pluginER)
+	})
 }
 
 func invokePluginTeardown() {
-	invoke(&pluginTeardown, "teardown", nil)
+	invoke(&pluginTeardown, "teardown", nil, nil, func(f func(...interface{}) error) error {
+		return f()
+	})
 }
 
-func invoke(info *setupInfo, name string, onErr func(), args ...interface{}) {
+func invoke(info *setupInfo, name string, onInit func(), onErr func(), call func(func(...interface{}) error) error) {
 	var funcs []func(...interface{}) error
 	var done chan struct{}
 	if func() bool {
@@ -65,10 +74,13 @@ func invoke(info *setupInfo, name string, onErr func(), args ...interface{}) {
 		copy(funcs, info.Funcs)
 		done = make(chan struct{}, 1)
 		info.Done = done
+		if onInit != nil {
+			onInit()
+		}
 		return true
 	}() {
 		for _, f := range funcs {
-			if err := f(args...); err != nil {
+			if err := call(f); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				if onErr != nil {
 					onErr()

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
@@ -20,7 +21,7 @@ func init() {
 	RegisterPluginTeardown(teardownURLs)
 }
 
-func setupURLs(conn *irc.Conn) error {
+func setupURLs(conn *irc.Conn, er event.EventRegistry) error {
 	var err error
 	historyDB, err = sql.Open("sqlite3", "./history.db")
 	if err != nil {
@@ -47,11 +48,17 @@ func setupURLs(conn *irc.Conn) error {
 			if matches != nil {
 				for _, submatches := range matches {
 					url := submatches[1]
-					handleURL(conn, historyDB, line, dst, url)
+					er.Dispatch("URL", conn, line, url)
 				}
 			}
 		}
 	})
+
+	er.AddHandler(event.NewHandler(func(args ...interface{}) {
+		conn, line, url := args[0].(*irc.Conn), args[1].(*irc.Line), args[2].(string)
+		dst := line.Args[0]
+		handleURL(conn, historyDB, line, dst, url)
+	}), "URL")
 
 	return nil
 }
