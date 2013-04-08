@@ -43,9 +43,9 @@ func main() {
 		conn.Join("#voidptr")
 	})
 
-	quit := make(chan struct{}, 1)
+	quit := make(chan bool, 1)
 	conn.AddHandler(irc.DISCONNECTED, func(conn *irc.Conn, line *irc.Line) {
-		quit <- struct{}{}
+		quit <- false
 	})
 
 	conn.AddHandler("PRIVMSG", func(conn *irc.Conn, line *irc.Line) {
@@ -60,31 +60,26 @@ func main() {
 					handleURL(conn, db, line, dst, url)
 				}
 			}
+		} else if dst == conn.Me.Nick {
+			fmt.Println(line.Raw)
+		}
+	})
+
+	conn.AddHandler("NOTICE", func(conn *irc.Conn, line *irc.Line) {
+		dst := line.Args[0]
+
+		if dst == conn.Me.Nick {
+			fmt.Println(line.Raw)
 		}
 	})
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	go func() {
-		dcsent := 0
 		for {
 			sig := <-signals
 			if sig == os.Interrupt {
-				switch dcsent {
-				case 0:
-					if conn.Connected {
-						fmt.Println("Quitting...")
-						conn.Quit("Quitting...")
-					} else {
-						quit <- struct{}{}
-						dcsent = dcsent + 1
-					}
-				case 1:
-					quit <- struct{}{}
-				case 2:
-					os.Exit(0)
-				}
-				dcsent = dcsent + 1
+				quit <- false
 			}
 		}
 	}()
@@ -93,10 +88,23 @@ func main() {
 	err = conn.Connect("chat.freenode.net")
 	if err != nil {
 		fmt.Println("error:", err)
-		quit <- struct{}{}
+		quit <- true
 	}
 
-	<-quit
+	go handleStdin(conn, quit)
+
+	dcsent := false
+	for {
+		flag := <-quit
+		if !flag && !dcsent && conn.Connected {
+			fmt.Println("Quitting...")
+			conn.Quit("Quitting...")
+			dcsent = true
+		} else {
+			break
+		}
+	}
+
 	fmt.Println("Goodbye")
 }
 
