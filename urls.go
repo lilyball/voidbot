@@ -53,11 +53,6 @@ func setupURLs(conn *irc.Conn) error {
 		}
 	})
 
-	conn.AddHandler("JOIN", func(conn *irc.Conn, line *irc.Line) {
-		if line.Nick == conn.Me.Nick {
-			fmt.Printf("! Channel %s joined\n", line.Args[0])
-		}
-	})
 	return nil
 }
 

@@ -40,6 +40,18 @@ func main() {
 		}
 	})
 
+	conn.AddHandler("JOIN", func(conn *irc.Conn, line *irc.Line) {
+		if line.Nick == conn.Me.Nick {
+			fmt.Printf("! Channel %s joined\n", line.Args[0])
+		}
+	})
+
+	conn.AddHandler("PART", func(conn *irc.Conn, line *irc.Line) {
+		if line.Nick == conn.Me.Nick {
+			fmt.Printf("! Channel %s left\n", line.Args[0])
+		}
+	})
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	go func() {
