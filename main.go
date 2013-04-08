@@ -85,7 +85,8 @@ func main() {
 	}()
 
 	fmt.Println("Connecting...")
-	err = conn.Connect("chat.freenode.net")
+	conn.SSL = true
+	err = conn.Connect("chat.freenode.net", "redacted")
 	if err != nil {
 		fmt.Println("error:", err)
 		quit <- true
