@@ -1,4 +1,4 @@
-package main
+package plugin
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ var (
 	pluginTeardown setupInfo
 )
 
-func RegisterPluginSetup(f func(*irc.Conn, event.EventRegistry) error) {
+func RegisterSetup(f func(*irc.Conn, event.EventRegistry) error) {
 	pluginSetup.Lock()
 	defer pluginSetup.Unlock()
 	if pluginSetup.Done != nil {
@@ -30,7 +30,7 @@ func RegisterPluginSetup(f func(*irc.Conn, event.EventRegistry) error) {
 	})
 }
 
-func RegisterPluginTeardown(f func() error) {
+func RegisterTeardown(f func() error) {
 	pluginTeardown.Lock()
 	defer pluginTeardown.Unlock()
 	if pluginTeardown.Done != nil {
@@ -43,18 +43,18 @@ func RegisterPluginTeardown(f func() error) {
 
 var pluginER event.EventRegistry
 
-func invokePluginSetup(conn *irc.Conn) {
+func InvokeSetup(conn *irc.Conn) {
 	invoke(&pluginSetup, "setup", func() {
 		pluginER = event.NewRegistry()
 	}, func() {
-		invokePluginTeardown()
+		InvokeTeardown()
 		os.Exit(1)
 	}, func(f func(...interface{}) error) error {
 		return f(conn, pluginER)
 	})
 }
 
-func invokePluginTeardown() {
+func InvokeTeardown() {
 	invoke(&pluginTeardown, "teardown", nil, nil, func(f func(...interface{}) error) error {
 		return f()
 	})

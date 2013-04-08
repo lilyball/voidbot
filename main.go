@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./plugin"
 	"fmt"
 	irc "github.com/fluffle/goirc/client"
 	"os"
@@ -11,7 +12,7 @@ func main() {
 	conn := irc.SimpleClient("voidbot", "voidbot", "#voidptr bot")
 	conn.EnableStateTracking()
 
-	invokePluginSetup(conn)
+	plugin.InvokeSetup(conn)
 
 	fmt.Println("Bot started")
 	conn.AddHandler(irc.CONNECTED, func(conn *irc.Conn, line *irc.Line) {
@@ -85,7 +86,7 @@ func main() {
 		}
 	}
 
-	invokePluginTeardown()
+	plugin.InvokeTeardown()
 
 	fmt.Println("Goodbye")
 }

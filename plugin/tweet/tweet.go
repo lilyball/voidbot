@@ -1,6 +1,7 @@
-package main
+package tweet
 
 import (
+	"../"
 	"code.google.com/p/go.net/html"
 	"fmt"
 	"github.com/fluffle/goevent/event"
@@ -27,7 +28,7 @@ func (t Tweet) Valid() bool {
 }
 
 func init() {
-	RegisterPluginSetup(setupTweet)
+	plugin.RegisterSetup(setupTweet)
 }
 
 func setupTweet(conn *irc.Conn, er event.EventRegistry) error {

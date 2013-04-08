@@ -1,6 +1,7 @@
-package main
+package urls
 
 import (
+	"../"
 	"database/sql"
 	"fmt"
 	"github.com/fluffle/goevent/event"
@@ -17,8 +18,8 @@ var URLRegex = regexp.MustCompile("(?i)\\b((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|
 var historyDB *sql.DB
 
 func init() {
-	RegisterPluginSetup(setupURLs)
-	RegisterPluginTeardown(teardownURLs)
+	plugin.RegisterSetup(setupURLs)
+	plugin.RegisterTeardown(teardownURLs)
 }
 
 func setupURLs(conn *irc.Conn, er event.EventRegistry) error {
