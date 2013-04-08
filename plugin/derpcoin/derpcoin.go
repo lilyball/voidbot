@@ -70,7 +70,7 @@ func ReplaceAllFold(s, sub, repl string) string {
 		if last != idx {
 			result = result + s[last:idx]
 		}
-		result = result + MatchCase(repl, result[idx:end])
+		result = result + MatchCase(repl, s[idx:end])
 
 		last = end
 		idx, end = IndexFold(s, sub, end)
