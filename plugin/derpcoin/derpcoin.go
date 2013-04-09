@@ -24,6 +24,10 @@ func setup(conn *irc.Conn, er event.EventRegistry) error {
 			comps := strings.SplitN(text, " ", 2)
 			if comps[0] == "!derpcoin" {
 				if len(comps) > 1 {
+					if line.Nick == "Me1000" {
+						plugin.Conn(conn).Privmsg(dst, "no")
+						return
+					}
 					flag := strings.ToLower(comps[1])
 					if flag == "on" {
 						enabled = true
