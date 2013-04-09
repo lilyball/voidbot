@@ -2,7 +2,6 @@ package derpcoin
 
 import (
 	"../"
-	"fmt"
 	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
 	"strings"
@@ -22,8 +21,7 @@ func setup(conn *irc.Conn, er event.EventRegistry) error {
 		if strings.HasPrefix(dst, "#") {
 			text = ReplaceAllFold(text, "bitcoin", "derpcoin")
 			if text != "" {
-				fmt.Printf("--> NOTICE[%s]: %s\n", dst, text)
-				conn.Notice(dst, text)
+				plugin.Conn(conn).Privmsg(dst, text)
 			}
 		}
 	})
