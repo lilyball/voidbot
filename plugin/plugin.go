@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"../utils"
 	"fmt"
 	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
@@ -73,7 +74,7 @@ func (c *IrcConn) Privmsg(dst, msg string) {
 func (c *IrcConn) PrivmsgN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> %s: %s\n", dst, line)
+		fmt.Printf("--> %s: %s\n", dst, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Privmsg(dst, line)
 	}
 }
@@ -85,7 +86,7 @@ func (c *IrcConn) Notice(dst, msg string) {
 func (c *IrcConn) NoticeN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> NOTICE[%s]: %s\n", dst, line)
+		fmt.Printf("--> NOTICE[%s]: %s\n", dst, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Notice(dst, line)
 	}
 }
@@ -97,7 +98,7 @@ func (c *IrcConn) Action(dst, msg string) {
 func (c *IrcConn) ActionN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> ACTION[%s]: %s %s\n", dst, c.Me.Nick, line)
+		fmt.Printf("--> ACTION[%s]: %s %s\n", dst, c.Me.Nick, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Action(dst, line)
 	}
 }
