@@ -94,7 +94,7 @@ func processTweetURL(conn *irc.Conn, line *irc.Line, url string) {
 
 	if tweet.Valid() {
 		dst := line.Args[0]
-		plugin.Conn(conn).PrivmsgN(dst, tweet.String(), 4)
+		plugin.Conn(conn).PrivmsgN(dst, "\00310,01\002Twitter\017 | "+tweet.String(), 4)
 	} else {
 		fmt.Println("Could not find tweet in page", url)
 	}
