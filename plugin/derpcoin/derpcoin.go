@@ -2,8 +2,13 @@ package derpcoin
 
 import (
 	"../"
+	"fmt"
 	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"math"
+	"math/rand"
+	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -14,6 +19,8 @@ func init() {
 }
 
 var enabled = true
+
+var btcRegex = regexp.MustCompile("(?i)(\\d+(?:\\.\\d*)?|\\.\\d+) ?btcs?\\b")
 
 func setup(conn *irc.Conn, er event.EventRegistry) error {
 	conn.AddHandler("PRIVMSG", func(conn *irc.Conn, line *irc.Line) {
@@ -49,6 +56,16 @@ func setup(conn *irc.Conn, er event.EventRegistry) error {
 				text = ReplaceAllFold(text, "bitcoin", "derpcoin")
 				if text != "" {
 					plugin.Conn(conn).Privmsg(dst, text)
+				} else if subs := btcRegex.FindStringSubmatch(text); subs != nil {
+					// we found a construct like "0.01 BTC"
+					if val, err := strconv.ParseFloat(subs[1], 64); err == nil {
+						const kUpperLimit = 1000
+						exchangeRate := float64(rand.Intn(kUpperLimit*100)) / 100.0
+						val *= exchangeRate
+						val = math.Floor(val*100.0) / 100.0
+						msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Nick, val)
+						plugin.Conn(conn).Privmsg(dst, msg)
+					}
 				}
 			}
 		}
