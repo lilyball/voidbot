@@ -41,7 +41,7 @@ func setupTweet(conn *irc.Conn, er event.EventRegistry) error {
 		}
 		if u.Scheme == "http" || u.Scheme == "https" {
 			if u.Host == "twitter.com" || u.Host == "www.twitter.com" {
-				if strings.Contains(u.Path, "/status/") {
+				if strings.Contains(u.Path, "/status/") && u.Fragment != "noquote" {
 					go processTweetURL(conn, line, urlStr)
 				}
 			}
