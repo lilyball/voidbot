@@ -35,7 +35,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 				arg = words[1]
 			}
 			reply, isPrivate := dst, false
-			if !strings.HasPrefix(reply, "#") {
+			if !isChannelName(reply) {
 				reply, isPrivate = line.Nick, true
 			}
 			reg.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
@@ -48,4 +48,8 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 		}
 	})
 	return nil
+}
+
+func isChannelName(name string) bool {
+	return len(name) > 0 && (name[0] == '#' || name[0] == '&' || name[0] == '!' || name[0] == '+')
 }
