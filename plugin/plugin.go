@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 type setupInfo struct {
@@ -67,6 +68,11 @@ func msgToLinesN(msg string, n int) []string {
 	return lines
 }
 
+func logLine(format string, args ...interface{}) {
+	args = append([]interface{}{time.Now().Format("15:04")}, args...)
+	fmt.Printf("%s --> "+format+"\n", args...)
+}
+
 func (c *IrcConn) Privmsg(dst, msg string) {
 	c.PrivmsgN(dst, msg, -1)
 }
@@ -74,7 +80,7 @@ func (c *IrcConn) Privmsg(dst, msg string) {
 func (c *IrcConn) PrivmsgN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> %s: %s\n", dst, utils.ColorToANSI(line))
+		logLine("%s: %s", dst, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Privmsg(dst, line)
 	}
 }
@@ -86,7 +92,7 @@ func (c *IrcConn) Notice(dst, msg string) {
 func (c *IrcConn) NoticeN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> NOTICE[%s]: %s\n", dst, utils.ColorToANSI(line))
+		logLine("NOTICE[%s]: %s\n", dst, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Notice(dst, line)
 	}
 }
@@ -98,7 +104,7 @@ func (c *IrcConn) Action(dst, msg string) {
 func (c *IrcConn) ActionN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		fmt.Printf("--> ACTION[%s]: %s %s\n", dst, c.Me.Nick, utils.ColorToANSI(line))
+		logLine("ACTION[%s]: %s %s\n", dst, c.Me.Nick, utils.ColorToANSI(line))
 		(*irc.Conn)(c).Action(dst, line)
 	}
 }
