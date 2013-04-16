@@ -30,7 +30,7 @@ func init() {
 }
 
 func setup(conn *irc.Conn, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, urlStr string) {
+	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Println("appdotnet:", err)
@@ -41,7 +41,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 				comps := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
 				if len(comps) > 2 && comps[1] == "post" {
 					id := comps[2]
-					go fetchADNPost(conn, line, id)
+					go fetchADNPost(conn, line, dst, id)
 				}
 			}
 		}
@@ -60,7 +60,7 @@ type Payload struct {
 	} `json:"data"`
 }
 
-func fetchADNPost(conn *irc.Conn, line *irc.Line, id string) {
+func fetchADNPost(conn *irc.Conn, line *irc.Line, dst, id string) {
 	url := fmt.Sprintf("https://alpha-api.app.net/stream/0/posts/%s", id)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -93,6 +93,5 @@ func fetchADNPost(conn *irc.Conn, line *irc.Line, id string) {
 		Timestamp: payload.Data.Timestamp,
 	}
 
-	dst := line.Args[0]
 	plugin.Conn(conn).PrivmsgN(dst, post.String(), 4)
 }

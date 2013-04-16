@@ -39,18 +39,17 @@ func setupURLs(conn *irc.Conn, reg *callback.Registry) error {
 		}
 	}
 
-	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line *irc.Line, text string) {
+	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line *irc.Line, dst, text string) {
 		matches := URLRegex.FindAllStringSubmatch(text, -1)
 		if matches != nil {
 			for _, submatches := range matches {
 				url := submatches[1]
-				reg.Dispatch("URL", conn, line, url)
+				reg.Dispatch("URL", conn, line, dst, url)
 			}
 		}
 	})
 
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, url string) {
-		dst := line.Args[0]
+	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, url string) {
 		handleURL(conn, historyDB, line, dst, url)
 	})
 
