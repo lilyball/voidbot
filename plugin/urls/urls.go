@@ -9,7 +9,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -40,20 +39,17 @@ func setupURLs(conn *irc.Conn, er event.EventRegistry) error {
 		}
 	}
 
-	conn.AddHandler("PRIVMSG", func(conn *irc.Conn, line *irc.Line) {
-		text := line.Args[len(line.Args)-1]
-		dst := line.Args[0]
+	er.AddHandler(event.NewHandler(func(args ...interface{}) {
+		conn, line, text := args[0].(*irc.Conn), args[1].(*irc.Line), args[3].(string)
 
-		if strings.HasPrefix(dst, "#") {
-			matches := URLRegex.FindAllStringSubmatch(text, -1)
-			if matches != nil {
-				for _, submatches := range matches {
-					url := submatches[1]
-					er.Dispatch("URL", conn, line, url)
-				}
+		matches := URLRegex.FindAllStringSubmatch(text, -1)
+		if matches != nil {
+			for _, submatches := range matches {
+				url := submatches[1]
+				er.Dispatch("URL", conn, line, url)
 			}
 		}
-	})
+	}), "PRIVMSG")
 
 	er.AddHandler(event.NewHandler(func(args ...interface{}) {
 		conn, line, url := args[0].(*irc.Conn), args[1].(*irc.Line), args[2].(string)
