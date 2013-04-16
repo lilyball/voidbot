@@ -3,8 +3,8 @@ package command
 import (
 	"../"
 	"fmt"
-	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/gocallback/callback"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -16,7 +16,7 @@ func init() {
 
 const commandPrefix = "!"
 
-func setup(conn *irc.Conn, er event.EventRegistry) error {
+func setup(conn *irc.Conn, reg *callback.Registry) error {
 	conn.AddHandler("PRIVMSG", func(conn *irc.Conn, line *irc.Line) {
 		if len(line.Args) != 2 {
 			// malformed line?
@@ -38,11 +38,11 @@ func setup(conn *irc.Conn, er event.EventRegistry) error {
 			if !strings.HasPrefix(reply, "#") {
 				reply, isPrivate = line.Nick, true
 			}
-			er.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
+			reg.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
 		} else if strings.HasPrefix(dst, "#") {
-			er.Dispatch("PRIVMSG", conn, line, dst, text)
+			reg.Dispatch("PRIVMSG", conn, line, dst, text)
 		} else if dst == conn.Me.Nick {
-			er.Dispatch("WHISPER", conn, line, text)
+			reg.Dispatch("WHISPER", conn, line, text)
 		} else {
 			fmt.Println("Unknown destination on PRIVMSG:", line.Raw)
 		}

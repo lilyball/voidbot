@@ -4,8 +4,8 @@ import (
 	"../"
 	"database/sql"
 	"fmt"
-	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/gocallback/callback"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"regexp"
@@ -21,7 +21,7 @@ func init() {
 	plugin.RegisterTeardown(teardownURLs)
 }
 
-func setupURLs(conn *irc.Conn, er event.EventRegistry) error {
+func setupURLs(conn *irc.Conn, reg *callback.Registry) error {
 	var err error
 	historyDB, err = sql.Open("sqlite3", "./history.db")
 	if err != nil {
@@ -39,23 +39,20 @@ func setupURLs(conn *irc.Conn, er event.EventRegistry) error {
 		}
 	}
 
-	er.AddHandler(event.NewHandler(func(args ...interface{}) {
-		conn, line, text := args[0].(*irc.Conn), args[1].(*irc.Line), args[3].(string)
-
+	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line *irc.Line, text string) {
 		matches := URLRegex.FindAllStringSubmatch(text, -1)
 		if matches != nil {
 			for _, submatches := range matches {
 				url := submatches[1]
-				er.Dispatch("URL", conn, line, url)
+				reg.Dispatch("URL", conn, line, url)
 			}
 		}
-	}), "PRIVMSG")
+	})
 
-	er.AddHandler(event.NewHandler(func(args ...interface{}) {
-		conn, line, url := args[0].(*irc.Conn), args[1].(*irc.Line), args[2].(string)
+	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, url string) {
 		dst := line.Args[0]
 		handleURL(conn, historyDB, line, dst, url)
-	}), "URL")
+	})
 
 	return nil
 }

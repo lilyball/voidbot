@@ -5,8 +5,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/gocallback/callback"
 	"net/http"
 	"net/url"
 	"time"
@@ -27,9 +27,8 @@ func init() {
 	plugin.RegisterSetup(setup)
 }
 
-func setup(conn *irc.Conn, er event.EventRegistry) error {
-	er.AddHandler(event.NewHandler(func(args ...interface{}) {
-		conn, line, urlStr := args[0].(*irc.Conn), args[1].(*irc.Line), args[2].(string)
+func setup(conn *irc.Conn, reg *callback.Registry) error {
+	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Println("youtube:", err)
@@ -44,7 +43,7 @@ func setup(conn *irc.Conn, er event.EventRegistry) error {
 				}
 			}
 		}
-	}), "URL")
+	})
 	return nil
 }
 

@@ -3,8 +3,8 @@ package plugin
 import (
 	"../utils"
 	"fmt"
-	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/gocallback/callback"
 	"os"
 	"strings"
 	"sync"
@@ -21,14 +21,14 @@ var (
 	pluginTeardown setupInfo
 )
 
-func RegisterSetup(f func(*irc.Conn, event.EventRegistry) error) {
+func RegisterSetup(f func(*irc.Conn, *callback.Registry) error) {
 	pluginSetup.Lock()
 	defer pluginSetup.Unlock()
 	if pluginSetup.Done != nil {
 		panic("setup was already invoked")
 	}
 	pluginSetup.Funcs = append(pluginSetup.Funcs, func(args ...interface{}) error {
-		return f(args[0].(*irc.Conn), args[1].(event.EventRegistry))
+		return f(args[0].(*irc.Conn), args[1].(*callback.Registry))
 	})
 }
 
@@ -103,16 +103,16 @@ func (c *IrcConn) ActionN(dst, msg string, n int) {
 	}
 }
 
-var pluginER event.EventRegistry
+var registry *callback.Registry
 
 func InvokeSetup(conn *irc.Conn) {
 	invoke(&pluginSetup, "setup", func() {
-		pluginER = event.NewRegistry()
+		registry = callback.NewRegistry(callback.DispatchSerial)
 	}, func() {
 		InvokeTeardown()
 		os.Exit(1)
 	}, func(f func(...interface{}) error) error {
-		return f(conn, pluginER)
+		return f(conn, registry)
 	})
 }
 

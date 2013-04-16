@@ -4,8 +4,8 @@ import (
 	"../"
 	"code.google.com/p/go.net/html"
 	"fmt"
-	"github.com/fluffle/goevent/event"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/gocallback/callback"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,9 +31,8 @@ func init() {
 	plugin.RegisterSetup(setupTweet)
 }
 
-func setupTweet(conn *irc.Conn, er event.EventRegistry) error {
-	er.AddHandler(event.NewHandler(func(args ...interface{}) {
-		conn, line, urlStr := args[0].(*irc.Conn), args[1].(*irc.Line), args[2].(string)
+func setupTweet(conn *irc.Conn, reg *callback.Registry) error {
+	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -46,7 +45,7 @@ func setupTweet(conn *irc.Conn, er event.EventRegistry) error {
 				}
 			}
 		}
-	}), "URL")
+	})
 	return nil
 }
 
