@@ -4,8 +4,8 @@ import (
 	"../"
 	"encoding/json"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -29,8 +29,8 @@ func init() {
 	plugin.RegisterSetup(setup)
 }
 
-func setup(conn *irc.Conn, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, urlStr string) {
+func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Println("appdotnet:", err)
@@ -41,7 +41,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 				comps := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
 				if len(comps) > 2 && comps[1] == "post" {
 					id := comps[2]
-					go fetchADNPost(conn, line, dst, id)
+					go fetchADNPost(plugin.Conn(conn), line, dst, id)
 				}
 			}
 		}
@@ -60,7 +60,7 @@ type Payload struct {
 	} `json:"data"`
 }
 
-func fetchADNPost(conn *irc.Conn, line *irc.Line, dst, id string) {
+func fetchADNPost(conn plugin.IrcConn, line irc.Line, dst, id string) {
 	url := fmt.Sprintf("https://alpha-api.app.net/stream/0/posts/%s", id)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -93,5 +93,5 @@ func fetchADNPost(conn *irc.Conn, line *irc.Line, dst, id string) {
 		Timestamp: payload.Data.Timestamp,
 	}
 
-	plugin.Conn(conn).PrivmsgN(dst, post.String(), 4)
+	conn.PrivmsgN(dst, post.String(), 4)
 }

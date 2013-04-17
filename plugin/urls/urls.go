@@ -4,8 +4,8 @@ import (
 	"../"
 	"database/sql"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"regexp"
@@ -21,7 +21,7 @@ func init() {
 	plugin.RegisterTeardown(teardownURLs)
 }
 
-func setupURLs(conn *irc.Conn, reg *callback.Registry) error {
+func setupURLs(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 	var err error
 	historyDB, err = sql.Open("sqlite3", "./history.db")
 	if err != nil {
@@ -39,7 +39,7 @@ func setupURLs(conn *irc.Conn, reg *callback.Registry) error {
 		}
 	}
 
-	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line *irc.Line, dst, text string) {
+	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		matches := URLRegex.FindAllStringSubmatch(text, -1)
 		if matches != nil {
 			for _, submatches := range matches {
@@ -49,7 +49,7 @@ func setupURLs(conn *irc.Conn, reg *callback.Registry) error {
 		}
 	})
 
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, url string) {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, url string) {
 		handleURL(conn, historyDB, line, dst, url)
 	})
 
@@ -63,7 +63,7 @@ func teardownURLs() error {
 	return nil
 }
 
-func handleURL(conn *irc.Conn, db *sql.DB, line *irc.Line, dst string, url string) {
+func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url string) {
 	tx, err := db.Begin()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -71,7 +71,7 @@ func handleURL(conn *irc.Conn, db *sql.DB, line *irc.Line, dst string, url strin
 	}
 	defer func() {
 		sqlstr := "INSERT INTO seen (url, nick, src, dst, timestamp) VALUES (?, ?, ?, ?, ?)"
-		_, err := tx.Exec(sqlstr, url, line.Nick, line.Src, dst, time.Now())
+		_, err := tx.Exec(sqlstr, url, line.Src.Nick, line.Src.Raw, dst, time.Now())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%q: %s\n", err, sqlstr)
 			tx.Rollback()

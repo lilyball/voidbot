@@ -4,8 +4,8 @@ import (
 	"../"
 	"code.google.com/p/go.net/html"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,8 +31,8 @@ func init() {
 	plugin.RegisterSetup(setupTweet)
 }
 
-func setupTweet(conn *irc.Conn, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, urlStr string) {
+func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -41,7 +41,7 @@ func setupTweet(conn *irc.Conn, reg *callback.Registry) error {
 		if u.Scheme == "http" || u.Scheme == "https" {
 			if u.Host == "twitter.com" || u.Host == "www.twitter.com" {
 				if strings.Contains(u.Path, "/status/") && u.Fragment != "noquote" {
-					go processTweetURL(conn, line, dst, urlStr)
+					go processTweetURL(plugin.Conn(conn), line, dst, urlStr)
 				}
 			}
 		}
@@ -49,7 +49,7 @@ func setupTweet(conn *irc.Conn, reg *callback.Registry) error {
 	return nil
 }
 
-func processTweetURL(conn *irc.Conn, line *irc.Line, dst, url string) {
+func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, url string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -92,7 +92,7 @@ func processTweetURL(conn *irc.Conn, line *irc.Line, dst, url string) {
 	f(doc)
 
 	if tweet.Valid() {
-		plugin.Conn(conn).PrivmsgN(dst, "\00310,01\002Twitter\017 | "+tweet.String(), 4)
+		conn.PrivmsgN(dst, "\00310,01\002Twitter\017 | "+tweet.String(), 4)
 	} else {
 		fmt.Println("Could not find tweet in page", url)
 	}

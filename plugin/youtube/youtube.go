@@ -5,8 +5,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	"net/http"
 	"net/url"
 	"time"
@@ -27,8 +27,8 @@ func init() {
 	plugin.RegisterSetup(setup)
 }
 
-func setup(conn *irc.Conn, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line *irc.Line, dst, urlStr string) {
+func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
 		u, err := url.Parse(urlStr)
 		if err != nil {
 			fmt.Println("youtube:", err)
@@ -38,7 +38,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 			if u.Host == "youtube.com" || u.Host == "www.youtube.com" {
 				if u.Path == "/watch" {
 					if key, ok := u.Query()["v"]; ok && key != nil {
-						go handleYoutubeVideo(conn, line, dst, key[0])
+						go handleYoutubeVideo(plugin.Conn(conn), line, dst, key[0])
 					}
 				}
 			}
@@ -47,7 +47,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 	return nil
 }
 
-func handleYoutubeVideo(conn *irc.Conn, line *irc.Line, dst, key string) {
+func handleYoutubeVideo(conn plugin.IrcConn, line irc.Line, dst, key string) {
 	url := fmt.Sprintf("http://gdata.youtube.com/feeds/api/videos/%s", key)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -71,7 +71,7 @@ func handleYoutubeVideo(conn *irc.Conn, line *irc.Line, dst, key string) {
 
 	v.Key = key
 
-	plugin.Conn(conn).Privmsg(dst, "\0031,15You\0030,5Tube\017 | "+v.String())
+	conn.Privmsg(dst, "\0031,15You\0030,5Tube\017 | "+v.String())
 }
 
 type Feed struct {

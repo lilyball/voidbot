@@ -3,86 +3,102 @@ package main
 import (
 	"./plugin"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
+	"github.com/kballard/goirc/irc"
 	"os"
 	"os/signal"
 )
 
 func main() {
-	conn := irc.SimpleClient("voidbot", "voidbot", "#voidptr bot")
-	conn.EnableStateTracking()
+	quit := make(chan struct{}, 1)
+	config := irc.Config{
+		Host: "chat.freenode.net",
+		SSL:  true,
 
-	plugin.InvokeSetup(conn)
+		Nick:     "voidbot",
+		User:     "voidbot",
+		RealName: "#voidptr bot",
+		Password: "voidbot:redacted",
 
-	fmt.Println("Bot started")
-	conn.AddHandler(irc.CONNECTED, func(conn *irc.Conn, line *irc.Line) {
-		fmt.Println("Connected")
-		conn.Join("#voidptr")
-	})
+		Init: func(reg irc.HandlerRegistry) {
+			fmt.Println("Bot started")
+			reg.AddHandler(irc.CONNECTED, func(conn *irc.Conn, line irc.Line) {
+				fmt.Println("Connected")
+				conn.Join([]string{"#voidptr"}, nil)
+			})
 
-	quit := make(chan bool, 1)
-	conn.AddHandler(irc.DISCONNECTED, func(conn *irc.Conn, line *irc.Line) {
-		quit <- true
-	})
+			reg.AddHandler(irc.DISCONNECTED, func(conn *irc.Conn, line irc.Line) {
+				quit <- struct{}{}
+			})
 
-	conn.AddHandler("PRIVMSG", func(conn *irc.Conn, line *irc.Line) {
-		dst := line.Args[0]
+			reg.AddHandler("PRIVMSG", func(conn *irc.Conn, line irc.Line) {
+				dst := line.Args[0]
 
-		if dst == conn.Me.Nick {
-			fmt.Println(line.Raw)
-		}
-	})
+				if dst == conn.Me().Nick {
+					fmt.Println(line.Raw)
+				}
+			})
 
-	conn.AddHandler("NOTICE", func(conn *irc.Conn, line *irc.Line) {
-		dst := line.Args[0]
+			reg.AddHandler("NOTICE", func(conn *irc.Conn, line irc.Line) {
+				dst := line.Args[0]
 
-		if dst == conn.Me.Nick {
-			fmt.Println(line.Raw)
-		}
-	})
+				if dst == conn.Me().Nick {
+					fmt.Println(line.Raw)
+				}
+			})
 
-	conn.AddHandler("JOIN", func(conn *irc.Conn, line *irc.Line) {
-		if line.Nick == conn.Me.Nick {
-			fmt.Printf("! Channel %s joined\n", line.Args[0])
-		}
-	})
+			reg.AddHandler("JOIN", func(conn *irc.Conn, line irc.Line) {
+				if line.SrcIsMe() {
+					fmt.Printf("! Channel %s joined\n", line.Args[0])
+				}
+			})
 
-	conn.AddHandler("PART", func(conn *irc.Conn, line *irc.Line) {
-		if line.Nick == conn.Me.Nick {
-			fmt.Printf("! Channel %s left\n", line.Args[0])
-		}
-	})
+			reg.AddHandler("PART", func(conn *irc.Conn, line irc.Line) {
+				if line.SrcIsMe() {
+					fmt.Printf("! Channel %s left\n", line.Args[0])
+				}
+			})
+
+			plugin.InvokeSetup(reg)
+		},
+	}
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
+	interrupt := make(chan struct{}, 1)
 	go func() {
 		for {
 			sig := <-signals
 			if sig == os.Interrupt {
-				quit <- false
+				interrupt <- struct{}{}
 			}
 		}
 	}()
 
 	fmt.Println("Connecting...")
-	conn.SSL = true
-	err := conn.Connect("chat.freenode.net", "voidbot:redacted")
+	conn, err := irc.Connect(config)
 	if err != nil {
 		fmt.Println("error:", err)
-		quit <- true
+		return
 	}
 
-	go handleStdin(conn, quit)
+	go handleStdin(conn, interrupt)
 
 	dcsent := false
+loop:
 	for {
-		flag := <-quit
-		if !flag && !dcsent && conn.Connected {
-			fmt.Println("Quitting...")
-			conn.Quit("Quitting...")
-			dcsent = true
-		} else {
-			break
+		select {
+		case <-interrupt:
+			if !dcsent {
+				fmt.Println("Quitting...")
+				if !conn.Quit("Quitting...") {
+					break loop
+				}
+				dcsent = true
+			} else {
+				break loop
+			}
+		case <-quit:
+			break loop
 		}
 	}
 

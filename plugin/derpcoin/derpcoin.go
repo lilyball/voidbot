@@ -4,8 +4,8 @@ import (
 	"../"
 	"../../utils"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	"math"
 	"math/rand"
 	"regexp"
@@ -21,8 +21,8 @@ var enabled = true
 
 var btcRegex = regexp.MustCompile("(?i)(\\d+(?:\\.\\d*)?|\\.\\d+) ?btcs?\\b")
 
-func setup(conn *irc.Conn, reg *callback.Registry) error {
-	reg.AddCallback("COMMAND", func(conn *irc.Conn, line *irc.Line, cmd string, arg string, reply string, isPrivate bool) {
+func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd string, arg string, reply string, isPrivate bool) {
 		if cmd == "derpcoin" && !isPrivate {
 			arg = strings.ToLower(strings.TrimSpace(arg))
 			if arg == "" {
@@ -34,7 +34,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 				}
 				plugin.Conn(conn).Privmsg(reply, msg)
 			} else if arg == "on" || arg == "off" {
-				if line.Nick == "Me1000" {
+				if line.Src.Nick == "Me1000" {
 					plugin.Conn(conn).Privmsg(reply, "no")
 				} else if arg == "on" {
 					enabled = true
@@ -48,7 +48,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 			}
 		}
 	})
-	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line *irc.Line, dst, text string) {
+	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		if enabled {
 			derptext := utils.ReplaceAllFold(text, "bitcoin", "derpcoin")
 			if derptext != "" {
@@ -63,7 +63,7 @@ func setup(conn *irc.Conn, reg *callback.Registry) error {
 				exchangeRate := float64(rand.Intn(kUpperLimit*100)) / 100.0
 				val *= exchangeRate
 				val = math.Floor(val*100.0) / 100.0
-				msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Nick, val)
+				msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Src.Nick, val)
 				plugin.Conn(conn).Privmsg(dst, msg)
 			}
 		}

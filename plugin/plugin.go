@@ -3,8 +3,8 @@ package plugin
 import (
 	"../utils"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/kballard/gocallback/callback"
+	"github.com/kballard/goirc/irc"
 	"os"
 	"strings"
 	"sync"
@@ -22,14 +22,14 @@ var (
 	pluginTeardown setupInfo
 )
 
-func RegisterSetup(f func(*irc.Conn, *callback.Registry) error) {
+func RegisterSetup(f func(irc.HandlerRegistry, *callback.Registry) error) {
 	pluginSetup.Lock()
 	defer pluginSetup.Unlock()
 	if pluginSetup.Done != nil {
 		panic("setup was already invoked")
 	}
 	pluginSetup.Funcs = append(pluginSetup.Funcs, func(args ...interface{}) error {
-		return f(args[0].(*irc.Conn), args[1].(*callback.Registry))
+		return f(args[0].(irc.HandlerRegistry), args[1].(*callback.Registry))
 	})
 }
 
@@ -45,10 +45,12 @@ func RegisterTeardown(f func() error) {
 }
 
 // Some utility functions for connections
-type IrcConn irc.Conn
+type IrcConn struct {
+	conn irc.SafeConn
+}
 
-func Conn(conn *irc.Conn) *IrcConn {
-	return (*IrcConn)(conn)
+func Conn(conn *irc.Conn) IrcConn {
+	return IrcConn{conn.SafeConn()}
 }
 
 func msgToLines(msg string) []string {
@@ -73,52 +75,52 @@ func logLine(format string, args ...interface{}) {
 	fmt.Printf("%s --> "+format+"\n", args...)
 }
 
-func (c *IrcConn) Privmsg(dst, msg string) {
+func (c IrcConn) Privmsg(dst, msg string) {
 	c.PrivmsgN(dst, msg, -1)
 }
 
-func (c *IrcConn) PrivmsgN(dst, msg string, n int) {
+func (c IrcConn) PrivmsgN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
 		logLine("%s: %s", dst, utils.ColorToANSI(line))
-		(*irc.Conn)(c).Privmsg(dst, line)
+		c.conn.Privmsg(dst, line)
 	}
 }
 
-func (c *IrcConn) Notice(dst, msg string) {
+func (c IrcConn) Notice(dst, msg string) {
 	c.NoticeN(dst, msg, -1)
 }
 
-func (c *IrcConn) NoticeN(dst, msg string, n int) {
+func (c IrcConn) NoticeN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
 		logLine("NOTICE[%s]: %s\n", dst, utils.ColorToANSI(line))
-		(*irc.Conn)(c).Notice(dst, line)
+		c.conn.Notice(dst, line)
 	}
 }
 
-func (c *IrcConn) Action(dst, msg string) {
+func (c IrcConn) Action(dst, msg string) {
 	c.ActionN(dst, msg, -1)
 }
 
-func (c *IrcConn) ActionN(dst, msg string, n int) {
+func (c IrcConn) ActionN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		logLine("ACTION[%s]: %s %s\n", dst, c.Me.Nick, utils.ColorToANSI(line))
-		(*irc.Conn)(c).Action(dst, line)
+		logLine("ACTION[%s]: %s %s\n", dst, c.conn.Me(), utils.ColorToANSI(line))
+		c.conn.Action(dst, line)
 	}
 }
 
 var registry *callback.Registry
 
-func InvokeSetup(conn *irc.Conn) {
+func InvokeSetup(reg irc.HandlerRegistry) {
 	invoke(&pluginSetup, "setup", func() {
 		registry = callback.NewRegistry(callback.DispatchSerial)
 	}, func() {
 		InvokeTeardown()
 		os.Exit(1)
 	}, func(f func(...interface{}) error) error {
-		return f(conn, registry)
+		return f(reg, registry)
 	})
 }
 
