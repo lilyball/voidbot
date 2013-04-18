@@ -7,6 +7,7 @@ import (
 	"github.com/kballard/gocallback/callback"
 	"github.com/kballard/goirc/irc"
 	_ "github.com/mattn/go-sqlite3"
+	"net/url"
 	"os"
 	"regexp"
 	"time"
@@ -43,13 +44,15 @@ func setupURLs(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 		matches := URLRegex.FindAllStringSubmatch(text, -1)
 		if matches != nil {
 			for _, submatches := range matches {
-				url := submatches[1]
-				reg.Dispatch("URL", conn, line, dst, url)
+				urlStr := submatches[1]
+				if u, err := url.Parse(urlStr); err == nil && u.Host != "" {
+					reg.Dispatch("URL", conn, line, dst, u)
+				}
 			}
 		}
 	})
 
-	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, url string) {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		handleURL(conn, historyDB, line, dst, url)
 	})
 
@@ -63,7 +66,7 @@ func teardownURLs() error {
 	return nil
 }
 
-func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url string) {
+func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url *url.URL) {
 	tx, err := db.Begin()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -71,7 +74,7 @@ func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url string
 	}
 	defer func() {
 		sqlstr := "INSERT INTO seen (url, nick, src, dst, timestamp) VALUES (?, ?, ?, ?, ?)"
-		_, err := tx.Exec(sqlstr, url, line.Src.Nick, line.Src.Raw, dst, time.Now())
+		_, err := tx.Exec(sqlstr, url.String(), line.Src.Nick, line.Src.Raw, dst, time.Now())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%q: %s\n", err, sqlstr)
 			tx.Rollback()
@@ -84,7 +87,7 @@ func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url string
 	}()
 
 	sqlstr := "SELECT nick, src, timestamp FROM seen WHERE url = ? AND dst = ? ORDER BY id DESC LIMIT 1"
-	row := tx.QueryRow(sqlstr, url, dst)
+	row := tx.QueryRow(sqlstr, url.String(), dst)
 
 	var nick, src string
 	var timestamp time.Time
@@ -100,7 +103,7 @@ func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url string
 		}
 
 		sqlstr = "SELECT COUNT(*) FROM seen WHERE url = ? AND dst = ?"
-		row = tx.QueryRow(sqlstr, url, dst)
+		row = tx.QueryRow(sqlstr, url.String(), dst)
 
 		var count int
 		err = row.Scan(&count)

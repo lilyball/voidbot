@@ -32,16 +32,11 @@ func init() {
 }
 
 func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
-		u, err := url.Parse(urlStr)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		if u.Scheme == "http" || u.Scheme == "https" {
-			if u.Host == "twitter.com" || u.Host == "www.twitter.com" {
-				if strings.Contains(u.Path, "/status/") && u.Fragment != "noquote" {
-					go processTweetURL(plugin.Conn(conn), line, dst, urlStr)
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
+		if url.Scheme == "http" || url.Scheme == "https" {
+			if url.Host == "twitter.com" || url.Host == "www.twitter.com" {
+				if strings.Contains(url.Path, "/status/") && url.Fragment != "noquote" {
+					go processTweetURL(plugin.Conn(conn), line, dst, url.String())
 				}
 			}
 		}

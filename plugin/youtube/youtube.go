@@ -28,16 +28,11 @@ func init() {
 }
 
 func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
-		u, err := url.Parse(urlStr)
-		if err != nil {
-			fmt.Println("youtube:", err)
-			return
-		}
-		if u.Scheme == "http" || u.Scheme == "https" {
-			if u.Host == "youtube.com" || u.Host == "www.youtube.com" {
-				if u.Path == "/watch" {
-					if key, ok := u.Query()["v"]; ok && key != nil {
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
+		if url.Scheme == "http" || url.Scheme == "https" {
+			if url.Host == "youtube.com" || url.Host == "www.youtube.com" {
+				if url.Path == "/watch" {
+					if key, ok := url.Query()["v"]; ok && key != nil {
 						go handleYoutubeVideo(plugin.Conn(conn), line, dst, key[0])
 					}
 				}

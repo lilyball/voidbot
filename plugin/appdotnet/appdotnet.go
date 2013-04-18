@@ -30,15 +30,10 @@ func init() {
 }
 
 func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
-	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst, urlStr string) {
-		u, err := url.Parse(urlStr)
-		if err != nil {
-			fmt.Println("appdotnet:", err)
-			return
-		}
-		if u.Scheme == "http" || u.Scheme == "https" {
-			if u.Host == "alpha.app.net" {
-				comps := strings.Split(strings.TrimLeft(u.Path, "/"), "/")
+	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
+		if url.Scheme == "http" || url.Scheme == "https" {
+			if url.Host == "alpha.app.net" {
+				comps := strings.Split(strings.TrimLeft(url.Path, "/"), "/")
 				if len(comps) > 2 && comps[1] == "post" {
 					id := comps[2]
 					go fetchADNPost(plugin.Conn(conn), line, dst, id)
