@@ -9,6 +9,7 @@ import (
 	"github.com/kballard/goirc/irc"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -41,6 +42,8 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 						go handleYoutubeVideo(plugin.Conn(conn), line, dst, key[0], url.Fragment)
 					}
 				}
+			} else if url.Host == "youtu.be" {
+				go handleYoutubeVideo(plugin.Conn(conn), line, dst, strings.TrimLeft(url.Path, "/"), url.Fragment)
 			}
 		}
 	})
