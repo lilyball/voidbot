@@ -16,11 +16,16 @@ type Video struct {
 	Title    string
 	Duration time.Duration
 	Key      string
+	Fragment string
 }
 
 func (v Video) String() string {
 	dur := fmt.Sprintf("%d:%02d", int(v.Duration.Minutes()), int(v.Duration.Seconds())%60)
-	return fmt.Sprintf("%s | %s | https://youtu.be/%s", v.Title, dur, v.Key)
+	frag := ""
+	if v.Fragment != "" {
+		frag = "#" + v.Fragment
+	}
+	return fmt.Sprintf("%s | %s | https://youtu.be/%s%s", v.Title, dur, v.Key, frag)
 }
 
 func init() {
@@ -33,7 +38,7 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			if url.Host == "youtube.com" || url.Host == "www.youtube.com" {
 				if url.Path == "/watch" {
 					if key, ok := url.Query()["v"]; ok && key != nil {
-						go handleYoutubeVideo(plugin.Conn(conn), line, dst, key[0])
+						go handleYoutubeVideo(plugin.Conn(conn), line, dst, key[0], url.Fragment)
 					}
 				}
 			}
@@ -42,7 +47,7 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 	return nil
 }
 
-func handleYoutubeVideo(conn plugin.IrcConn, line irc.Line, dst, key string) {
+func handleYoutubeVideo(conn plugin.IrcConn, line irc.Line, dst, key, fragment string) {
 	url := fmt.Sprintf("http://gdata.youtube.com/feeds/api/videos/%s", key)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -65,6 +70,7 @@ func handleYoutubeVideo(conn plugin.IrcConn, line irc.Line, dst, key string) {
 	}
 
 	v.Key = key
+	v.Fragment = fragment
 
 	conn.Privmsg(dst, "\0031,15You\0030,5Tube\017 | "+v.String())
 }
