@@ -55,16 +55,16 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 				plugin.Conn(conn).Privmsg(dst, derptext)
 				return
 			}
-		}
-		if subs := btcRegex.FindStringSubmatch(text); subs != nil {
-			// we found a construct like "0.01 BTC"
-			if val, err := strconv.ParseFloat(subs[1], 64); err == nil {
-				const kUpperLimit = 1000
-				exchangeRate := float64(rand.Intn(kUpperLimit*100)) / 100.0
-				val *= exchangeRate
-				val = math.Floor(val*100.0) / 100.0
-				msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Src.Nick, val)
-				plugin.Conn(conn).Privmsg(dst, msg)
+			if subs := btcRegex.FindStringSubmatch(text); subs != nil {
+				// we found a construct like "0.01 BTC"
+				if val, err := strconv.ParseFloat(subs[1], 64); err == nil {
+					const kUpperLimit = 1000
+					exchangeRate := float64(rand.Intn(kUpperLimit*100)) / 100.0
+					val *= exchangeRate
+					val = math.Floor(val*100.0) / 100.0
+					msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Src.Nick, val)
+					plugin.Conn(conn).Privmsg(dst, msg)
+				}
 			}
 		}
 	})
