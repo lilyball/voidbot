@@ -16,7 +16,7 @@ func init() {
 	plugin.RegisterSetup(setup)
 }
 
-var stockRegex = regexp.MustCompile("\\$[A-Z]{1,4}\\b")
+var stockRegex = regexp.MustCompile("\\$[A-Z]{1,4}(?:[A-Z]|\\.[A-Z]|\\.PK|SC|NM|'U)\\b")
 
 type QueryResult struct {
 	Quotes []Quote `xml:"results>quote"`
@@ -36,6 +36,7 @@ type Quote struct {
 	DaysHigh           string // monetary
 	PercentChange      string
 	LastTradePriceOnly string // monetary
+	Error              string `xml:"ErrorIndicationreturnedforsymbolchangedinvalid"`
 }
 
 func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
@@ -127,10 +128,7 @@ func formatQuotes(quotes []Quote) []string {
 }
 
 func validateQuote(quote Quote) bool {
-	if quote.LastTradePriceOnly == "0.00" {
-		return false
-	}
-	return true
+	return quote.Error == ""
 }
 
 func formatQuote(quote Quote) string {
@@ -144,11 +142,6 @@ func formatQuote(quote Quote) string {
 		col = "\00304"
 	}
 	resp = fmt.Sprintf("%s %s%s (%s)\017", resp, col, quote.Change, quote.PercentChange)*/
-	if quote.LastTradePriceOnly == "" {
-		fmt.Println("stocks: LastTradePriceOnly is missing")
-		resp = resp + " error"
-	} else {
-		resp = fmt.Sprintf("%s $%s", resp, quote.LastTradePriceOnly)
-	}
+	resp = fmt.Sprintf("%s $%s", resp, quote.LastTradePriceOnly)
 	return resp
 }
