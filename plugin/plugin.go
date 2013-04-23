@@ -162,3 +162,11 @@ func invoke(info *setupInfo, name string, onInit func(), onErr func(), call func
 		done <- <-done
 	}
 }
+
+// Other miscellaneous utility functions for plugins
+
+// AllowedPrivmsgTextLength returns the amount of text that can be safely given
+// to a Privmsg command with the given destination.
+func AllowedPrivmsgTextLength(dst string) int {
+	return 510 - len("PRIVMSG ") - len(dst) - len(" :")
+}

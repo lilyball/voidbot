@@ -5,6 +5,7 @@ import (
 	_ "./plugin/command"
 	_ "./plugin/derpcoin"
 	_ "./plugin/reaction"
+	_ "./plugin/stocks"
 	_ "./plugin/tweet"
 	_ "./plugin/urls"
 	_ "./plugin/youtube"
