@@ -80,6 +80,9 @@ func queryStocks(stocks []string, conn plugin.IrcConn, reply string) {
 		return
 	}
 	quotes := formatQuotes(result.Quotes)
+	if len(quotes) == 0 {
+		return
+	}
 	// return multiple quotes on one line.
 	maxLength := plugin.AllowedPrivmsgTextLength(reply)
 	lines := make([]string, 1)
@@ -112,12 +115,22 @@ func buildQuery(stocks []string) string {
 	return fmt.Sprintf("select * from yahoo.finance.quotes where symbol in (%s)", strings.Join(quoted, ","))
 }
 
+// formatQuotes formats the quotes into strings, and removes any invalid quotes
 func formatQuotes(quotes []Quote) []string {
-	results := make([]string, len(quotes))
-	for i, quote := range quotes {
-		results[i] = formatQuote(quote)
+	results := make([]string, 0, len(quotes))
+	for _, quote := range quotes {
+		if validateQuote(quote) {
+			results = append(results, formatQuote(quote))
+		}
 	}
 	return results
+}
+
+func validateQuote(quote Quote) bool {
+	if quote.LastTradePriceOnly == "0.00" {
+		return false
+	}
+	return true
 }
 
 func formatQuote(quote Quote) string {
