@@ -58,6 +58,15 @@ func main() {
 				}
 			})
 
+			reg.AddHandler(irc.CTCP, func(conn *irc.Conn, line irc.Line) {
+				fmt.Printf("Received CTCP[%s] from %s [%s]: %s\n", line.Args[0], line.Src.Nick, line.Src.Ident(), append(line.Args[1:len(line.Args)], "")[0])
+				if line.Args[0] == "VERSION" {
+					plugin.Conn(conn).CTCPReply(line.Src.Nick, "VERSION", "voidbot powered by github.com/kballard/goirc")
+				} else {
+					conn.DefaultCTCPHandler(line)
+				}
+			})
+
 			plugin.InvokeSetup(reg)
 		},
 	}

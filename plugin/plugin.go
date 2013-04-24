@@ -111,6 +111,18 @@ func (c IrcConn) ActionN(dst, msg string, n int) {
 	}
 }
 
+func (c IrcConn) CTCPReply(dst, cmd, args string) {
+	c.CTCPReplyN(dst, cmd, args, -1)
+}
+
+func (c IrcConn) CTCPReplyN(dst, cmd, args string, n int) {
+	lines := msgToLinesN(args, n)
+	for _, line := range lines {
+		logLine("[ctcp(%s)] %s %s", dst, cmd, utils.ColorToANSI(line))
+		c.conn.CTCPReply(dst, cmd, line)
+	}
+}
+
 var registry *callback.Registry
 
 func InvokeSetup(reg irc.HandlerRegistry) {
