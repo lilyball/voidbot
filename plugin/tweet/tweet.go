@@ -3,6 +3,7 @@ package tweet
 import (
 	"../"
 	"code.google.com/p/go.net/html"
+	"code.google.com/p/go.net/html/atom"
 	"fmt"
 	"github.com/kballard/gocallback/callback"
 	"github.com/kballard/goirc/irc"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"unicode"
 )
 
 type Tweet struct {
@@ -35,8 +37,11 @@ func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "twitter.com" || url.Host == "www.twitter.com" {
-				if (strings.Contains(url.Path, "/status/") || strings.Contains(url.Path, "/statuses/")) && url.Fragment != "noquote" {
-					go processTweetURL(plugin.Conn(conn), line, dst, url.String())
+				if url.Fragment != "noquote" {
+					username, tweet_id := parseTwitterURL(url)
+					if username != "" && tweet_id != "" {
+						go processTweetURL(plugin.Conn(conn), line, dst, username, tweet_id)
+					}
 				}
 			}
 		}
@@ -44,7 +49,20 @@ func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 	return nil
 }
 
-func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, url string) {
+func parseTwitterURL(url *url.URL) (username, tweet_id string) {
+	comps := strings.Split(url.Path, "/")
+	if comps[0] == "" {
+		comps = comps[1:]
+	}
+	if len(comps) >= 3 && (comps[1] == "status" || comps[1] == "statuses") &&
+		len(comps[2]) > 0 && strings.IndexFunc(comps[2], func(r rune) bool { return !unicode.IsDigit(r) }) == -1 {
+		username, tweet_id = comps[0], comps[2]
+	}
+	return
+}
+
+func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id string) {
+	url := fmt.Sprintf("http://twitter.com/%s/status/%s", username, tweet_id)
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -70,7 +88,7 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, url string) {
 			classes := classMap(n)
 			if classes["tweet-text"] {
 				tweet.Tweet = nodeString(n)
-			} else if classes["tweet-timestamp"] {
+			} else if classes["tweet-timestamp"] && n.DataAtom == atom.A && nodeAttr(n, "href") == fmt.Sprintf("/%s/status/%s", username, tweet_id) {
 				tweet.Timestamp = nodeAttr(n, "title")
 			} else if classes["original-tweet"] {
 				tweet.Fullname = nodeAttr(n, "data-name")
