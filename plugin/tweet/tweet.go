@@ -35,7 +35,7 @@ func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "twitter.com" || url.Host == "www.twitter.com" {
-				if strings.Contains(url.Path, "/status/") && url.Fragment != "noquote" {
+				if (strings.Contains(url.Path, "/status/") || strings.Contains(url.Path, "/statuses/")) && url.Fragment != "noquote" {
 					go processTweetURL(plugin.Conn(conn), line, dst, url.String())
 				}
 			}
