@@ -88,7 +88,7 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 			classes := classMap(n)
 			if classes["tweet-text"] {
 				tweet.Tweet = nodeString(n)
-			} else if classes["tweet-timestamp"] && n.DataAtom == atom.A && nodeAttr(n, "href") == fmt.Sprintf("/%s/status/%s", username, tweet_id) {
+			} else if classes["tweet-timestamp"] && n.DataAtom == atom.A && strings.EqualFold(nodeAttr(n, "href"), fmt.Sprintf("/%s/status/%s", username, tweet_id)) {
 				tweet.Timestamp = nodeAttr(n, "title")
 			} else if classes["original-tweet"] {
 				tweet.Fullname = nodeAttr(n, "data-name")
