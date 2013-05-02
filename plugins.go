@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "./plugin/alpha"
 	_ "./plugin/appdotnet"
 	_ "./plugin/command"
 	_ "./plugin/derpcoin"
