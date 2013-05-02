@@ -79,7 +79,7 @@ func runQuery(conn plugin.IrcConn, arg, reply string) {
 		if !result.IsError {
 			conn.Privmsg(reply, header+" Wolfram|Alpha doesn't know how to interpret your query")
 		} else {
-			conn.Privmsg(reply, header+" error: "+result.Error.Msg)
+			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
 		}
 	} else if len(result.Pods) == 0 {
 		conn.Privmsg(reply, header+" Malformed results from API")
@@ -96,7 +96,7 @@ func runQuery(conn plugin.IrcConn, arg, reply string) {
 			}
 		}
 		if pod.IsError {
-			conn.Privmsg(reply, header+" error: "+pod.Error.Msg)
+			conn.PrivmsgN(reply, header+" error: "+pod.Error.Msg, 5)
 		} else {
 			// use the first subpod with a non-empty plaintext
 			var subpod Subpod
@@ -109,7 +109,7 @@ func runQuery(conn plugin.IrcConn, arg, reply string) {
 			if subpod.Plaintext == "" {
 				conn.Privmsg(reply, header+" Couldn't find plain text representation of answer")
 			} else {
-				conn.Privmsg(reply, fmt.Sprintf("%s %s: %s", header, pod.Title, subpod.Plaintext))
+				conn.PrivmsgN(reply, fmt.Sprintf("%s %s: %s", header, pod.Title, subpod.Plaintext), 5)
 			}
 		}
 	}
