@@ -30,10 +30,12 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 }
 
 type QueryResult struct {
-	IsSuccess bool       `xml:"success,attr"`
-	IsError   bool       `xml:"error,attr"`
-	Pods      []Pod      `xml:"pod"`
-	Error     QueryError `xml:"error"`
+	IsSuccess     bool       `xml:"success,attr"`
+	IsError       bool       `xml:"error,attr"`
+	ParseTimedOut bool       `xml:"parsetimedout,attr"`
+	TimedOut      string     `xml:"timedout,attr"`
+	Pods          []Pod      `xml:"pod"`
+	Error         QueryError `xml:"error"`
 }
 
 type QueryError struct {
@@ -76,13 +78,19 @@ func runQuery(conn plugin.IrcConn, arg, reply string) {
 	}
 
 	if !result.IsSuccess {
-		if !result.IsError {
+		if result.ParseTimedOut {
+			conn.Privmsg(reply, header+" error: parse timed out")
+		} else if !result.IsError {
 			conn.Privmsg(reply, header+" Wolfram|Alpha doesn't know how to interpret your query")
 		} else {
 			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
 		}
 	} else if len(result.Pods) == 0 {
-		conn.Privmsg(reply, header+" Malformed results from API")
+		if result.TimedOut != "" {
+			conn.Privmsg(reply, header+" timed out: "+result.TimedOut)
+		} else {
+			conn.Privmsg(reply, header+" Malformed results from API")
+		}
 	} else {
 		pod := result.Pods[0]
 		// use the primary pod if there is one
