@@ -57,6 +57,8 @@ type Pod struct {
 }
 
 type Subpod struct {
+	Title     string `xml:"title,attr"`
+	Primary   bool   `xml:"primary,attr"`
 	Plaintext string `xml:"plaintext"`
 	MathML    string `xml:"mathml"`
 }
@@ -148,15 +150,20 @@ func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, reca
 		if pod.IsError {
 			conn.PrivmsgN(reply, header+" error: "+pod.Error.Msg, 5)
 		} else {
-			// use the first subpod with a non-empty plaintext
-			var subpod Subpod
+			// use the primary subpod, if it has a non-empty plaintext.
+			// otherwise, use the first subpod with a non-empty plaintext
+			var subpod *Subpod
 			for _, sp := range pod.Subpods {
 				if sp.Plaintext != "" {
-					subpod = sp
-					break
+					if sp.Primary {
+						subpod = &sp
+						break
+					} else if subpod == nil {
+						subpod = &sp
+					}
 				}
 			}
-			if subpod.Plaintext == "" {
+			if subpod == nil {
 				conn.Privmsg(reply, header+" Couldn't find plain text representation of answer")
 			} else {
 				conn.PrivmsgN(reply, fmt.Sprintf("%s %s: %s", header, pod.Title, subpod.Plaintext), 5)
