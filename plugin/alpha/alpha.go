@@ -30,13 +30,14 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 }
 
 type QueryResult struct {
-	IsSuccess     bool       `xml:"success,attr"`
-	IsError       bool       `xml:"error,attr"`
-	ParseTimedOut bool       `xml:"parsetimedout,attr"`
-	TimedOut      string     `xml:"timedout,attr"`
-	Recalculate   string     `xml:"recalculate,attr"`
-	Pods          []Pod      `xml:"pod"`
-	Error         QueryError `xml:"error"`
+	IsSuccess     bool         `xml:"success,attr"`
+	IsError       bool         `xml:"error,attr"`
+	ParseTimedOut bool         `xml:"parsetimedout,attr"`
+	TimedOut      string       `xml:"timedout,attr"`
+	Recalculate   string       `xml:"recalculate,attr"`
+	Pods          []Pod        `xml:"pod"`
+	Error         QueryError   `xml:"error"`
+	DidYouMeans   []DidYouMean `xml:"didyoumeans>didyoumean"`
 }
 
 type QueryError struct {
@@ -56,6 +57,12 @@ type Pod struct {
 type Subpod struct {
 	Plaintext string `xml:"plaintext"`
 	MathML    string `xml:"mathml"`
+}
+
+type DidYouMean struct {
+	Score float32 `xml:"score,attr"`
+	Level string  `xml:"level,attr"`
+	Text  string  `xml:",chardata"`
 }
 
 var header = "\00304Wolfram\017|\00307Alpha\017"
@@ -86,7 +93,11 @@ func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
 		if result.ParseTimedOut {
 			conn.Privmsg(reply, header+" error: parse timed out")
 		} else if !result.IsError {
-			conn.Privmsg(reply, header+" Wolfram|Alpha doesn't know how to interpret your query")
+			if len(result.DidYouMeans) > 0 && recalculate {
+				runAPICall(conn, reply, constructURL(result.DidYouMeans[0].Text), false)
+			} else {
+				conn.Privmsg(reply, header+" Wolfram|Alpha doesn't know how to interpret your query")
+			}
 		} else {
 			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
 		}
