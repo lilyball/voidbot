@@ -99,7 +99,9 @@ func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
 			conn.Privmsg(reply, header+" error: parse timed out")
 		} else if !result.IsError {
 			if len(result.DidYouMeans) > 0 && recalculate {
-				runAPICall(conn, reply, constructURL(result.DidYouMeans[0].Text), false)
+				text := result.DidYouMeans[0].Text
+				conn.Privmsg(reply, header+" Using closest Wolfram|Alpha interpretation: "+text)
+				runAPICall(conn, reply, constructURL(text), false)
 			} else {
 				msg := header + " Wolfram|Alpha doesn't know how to interpret your query"
 				if len(result.Tips) > 0 {
