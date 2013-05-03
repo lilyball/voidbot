@@ -132,13 +132,16 @@ func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, reca
 		}
 	} else {
 		pod := result.Pods[0]
+		if pod.Id == "Input" && len(result.Pods) > 1 {
+			pod = result.Pods[1]
+		}
 		// use the primary pod if there is one
-		// otherwise use one with the title of "Results"
+		// otherwise use one with the title of "Result"
 		for _, p := range result.Pods {
 			if p.Primary {
 				pod = p
 				break
-			} else if p.Title == "Results" {
+			} else if p.Title == "Result" {
 				pod = p
 			}
 		}
@@ -166,5 +169,5 @@ func constructURL(query string) string {
 	query = url.QueryEscape(query)
 	location := url.QueryEscape("San Francisco, CA")
 	appid := url.QueryEscape("P9KHX4-E8QPJ45UTA")
-	return fmt.Sprintf("http://api.wolframalpha.com/v2/query?input=%s&appid=%s&format=plaintext&location=%s&excludepodid=Input&podindex=1", query, appid, location)
+	return fmt.Sprintf("http://api.wolframalpha.com/v2/query?input=%s&appid=%s&format=plaintext&location=%s&podindex=1,2", query, appid, location)
 }
