@@ -38,6 +38,7 @@ type QueryResult struct {
 	Pods          []Pod        `xml:"pod"`
 	Error         QueryError   `xml:"error"`
 	DidYouMeans   []DidYouMean `xml:"didyoumeans>didyoumean"`
+	Tips          []Tip        `xml:"tips>tip"`
 }
 
 type QueryError struct {
@@ -63,6 +64,10 @@ type DidYouMean struct {
 	Score float32 `xml:"score,attr"`
 	Level string  `xml:"level,attr"`
 	Text  string  `xml:",chardata"`
+}
+
+type Tip struct {
+	Text string `xml:"text,attr"`
 }
 
 var header = "\00304Wolfram\017|\00307Alpha\017"
@@ -96,7 +101,11 @@ func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
 			if len(result.DidYouMeans) > 0 && recalculate {
 				runAPICall(conn, reply, constructURL(result.DidYouMeans[0].Text), false)
 			} else {
-				conn.Privmsg(reply, header+" Wolfram|Alpha doesn't know how to interpret your query")
+				msg := header + " Wolfram|Alpha doesn't know how to interpret your query"
+				if len(result.Tips) > 0 {
+					msg += ". " + result.Tips[0].Text
+				}
+				conn.Privmsg(reply, msg)
 			}
 		} else {
 			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
