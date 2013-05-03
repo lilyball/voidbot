@@ -34,6 +34,7 @@ type QueryResult struct {
 	IsError       bool       `xml:"error,attr"`
 	ParseTimedOut bool       `xml:"parsetimedout,attr"`
 	TimedOut      string     `xml:"timedout,attr"`
+	Recalculate   string     `xml:"recalculate,attr"`
 	Pods          []Pod      `xml:"pod"`
 	Error         QueryError `xml:"error"`
 }
@@ -60,7 +61,11 @@ type Subpod struct {
 var header = "\00304Wolfram\017|\00307Alpha\017"
 
 func runQuery(conn plugin.IrcConn, arg, reply string) {
-	resp, err := http.Get(constructURL(arg))
+	runAPICall(conn, reply, constructURL(arg), true)
+}
+
+func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
+	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("alpha:", err)
 		return
@@ -86,7 +91,9 @@ func runQuery(conn plugin.IrcConn, arg, reply string) {
 			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
 		}
 	} else if len(result.Pods) == 0 {
-		if result.TimedOut != "" {
+		if result.Recalculate != "" && recalculate {
+			runAPICall(conn, reply, result.Recalculate, false)
+		} else if result.TimedOut != "" {
 			conn.Privmsg(reply, header+" timed out: "+result.TimedOut)
 		} else {
 			conn.Privmsg(reply, header+" Malformed results from API")
