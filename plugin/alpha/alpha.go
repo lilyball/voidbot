@@ -73,10 +73,10 @@ type Tip struct {
 var header = "\00304Wolfram\017|\00307Alpha\017"
 
 func runQuery(conn plugin.IrcConn, arg, reply string) {
-	runAPICall(conn, reply, constructURL(arg), true)
+	runAPICall(conn, reply, arg, constructURL(arg), true, true)
 }
 
-func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
+func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, recalculate bool) {
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("alpha:", err)
@@ -94,14 +94,16 @@ func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
 		return
 	}
 
+	if !reinterpret {
+		conn.Privmsg(reply, header+" Using closest Wolfram|Alpha interpretation: "+query)
+	}
 	if !result.IsSuccess {
 		if result.ParseTimedOut {
 			conn.Privmsg(reply, header+" error: parse timed out")
 		} else if !result.IsError {
 			if len(result.DidYouMeans) > 0 && recalculate {
 				text := result.DidYouMeans[0].Text
-				conn.Privmsg(reply, header+" Using closest Wolfram|Alpha interpretation: "+text)
-				runAPICall(conn, reply, constructURL(text), false)
+				runAPICall(conn, reply, text, constructURL(text), false, true)
 			} else {
 				msg := header + " Wolfram|Alpha doesn't know how to interpret your query"
 				if len(result.Tips) > 0 {
@@ -114,7 +116,7 @@ func runAPICall(conn plugin.IrcConn, reply, url string, recalculate bool) {
 		}
 	} else if len(result.Pods) == 0 {
 		if result.Recalculate != "" && recalculate {
-			runAPICall(conn, reply, result.Recalculate, false)
+			runAPICall(conn, reply, query, result.Recalculate, reinterpret, false)
 		} else if result.TimedOut != "" {
 			conn.Privmsg(reply, header+" timed out: "+result.TimedOut)
 		} else {
