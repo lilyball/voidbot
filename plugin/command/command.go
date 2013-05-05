@@ -39,13 +39,19 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 				reply, isPrivate = line.Src.Nick, true
 			}
 			reg.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
-		} else if strings.HasPrefix(dst, "#") {
+		} else if isChannelName(dst) {
 			reg.Dispatch("PRIVMSG", conn, line, dst, text)
 		} else if dst == conn.Me().Nick {
 			reg.Dispatch("WHISPER", conn, line, text)
 		} else {
 			fmt.Println("Unknown destination on PRIVMSG:", line.Raw)
 		}
+	})
+	hreg.AddHandler(irc.ACTION, func(conn *irc.Conn, line irc.Line) {
+		dst := line.Dst
+		text := line.Args[0]
+		isPrivate := !isChannelName(dst)
+		reg.Dispatch("ACTION", conn, line, dst, text, isPrivate)
 	})
 	return nil
 }
