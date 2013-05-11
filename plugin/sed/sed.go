@@ -142,7 +142,7 @@ func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string)
 				if line.Action {
 					result = src + " " + result
 				}
-				conn.Privmsg(dst, fmt.Sprintf("%s meant to say: %s", src, result))
+				conn.Privmsg(dst, fmt.Sprintf("%s meant: %s", src, result))
 			}
 		}
 	}
