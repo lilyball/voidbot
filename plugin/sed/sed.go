@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup, NewConnection: newConnection})
 }
 
 type Line struct {
@@ -21,7 +21,7 @@ var channels map[string]map[string]Line // map[channel name]map[nickname]Line
 
 var sedRegex = regexp.MustCompile(`^s/((?:\\/|[^/])+)/((?:\\/|[^/])+)/([ig]*)$`)
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setup(reg *callback.Registry) error {
 	channels = make(map[string]map[string]Line)
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		if line.Src.Nick == "" {
@@ -53,7 +53,11 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			lines[line.Src.Nick] = Line{Msg: text, Action: true}
 		}
 	})
-	hreg.AddHandler("PART", func(conn *irc.Conn, line irc.Line) {
+	return nil
+}
+
+func newConnection(reg irc.HandlerRegistry) {
+	reg.AddHandler("PART", func(conn *irc.Conn, line irc.Line) {
 		if len(line.Args) < 1 {
 			return
 		}
@@ -65,7 +69,7 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			delete(lines, line.Src.Nick)
 		}
 	})
-	hreg.AddHandler("QUIT", func(conn *irc.Conn, line irc.Line) {
+	reg.AddHandler("QUIT", func(conn *irc.Conn, line irc.Line) {
 		if line.Src.Nick == "" {
 			return
 		}
@@ -73,7 +77,7 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			delete(lines, line.Src.Nick)
 		}
 	})
-	hreg.AddHandler("KICK", func(conn *irc.Conn, line irc.Line) {
+	reg.AddHandler("KICK", func(conn *irc.Conn, line irc.Line) {
 		if len(line.Args) < 2 {
 			return
 		}
@@ -83,7 +87,7 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			delete(lines, nick)
 		}
 	})
-	hreg.AddHandler("NICK", func(conn *irc.Conn, line irc.Line) {
+	reg.AddHandler("NICK", func(conn *irc.Conn, line irc.Line) {
 		if len(line.Args) < 1 {
 			return
 		}
@@ -96,7 +100,6 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			}
 		}
 	})
-	return nil
 }
 
 func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string) {

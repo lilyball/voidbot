@@ -21,6 +21,12 @@ func main() {
 		}
 	}()
 
+	if err := plugin.InvokeInit(); err != nil {
+		fmt.Println("error in plugin init:", err)
+		plugin.InvokeTeardown()
+		return
+	}
+
 	discon := make(chan struct{}, 1)
 	var stdin *Stdin
 	for {
@@ -81,7 +87,7 @@ func main() {
 					}
 				})
 
-				plugin.InvokeSetup(reg)
+				plugin.InvokeNewConnection(reg)
 			},
 		}
 
@@ -89,6 +95,7 @@ func main() {
 		conn, err := irc.Connect(config)
 		if err != nil {
 			fmt.Println("error:", err)
+			plugin.InvokeTeardown()
 			return
 		}
 
@@ -116,6 +123,8 @@ func main() {
 				break loop
 			}
 		}
+
+		plugin.InvokeDisconnected()
 
 		if dcsent {
 			break

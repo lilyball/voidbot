@@ -5,43 +5,38 @@ import (
 	"fmt"
 	"github.com/kballard/gocallback/callback"
 	"github.com/kballard/goirc/irc"
-	"os"
 	"strings"
 	"sync"
 	"time"
 )
 
-type setupInfo struct {
-	sync.Mutex
-	Funcs []func(...interface{}) error
-	Done  chan struct{}
+type Callbacks struct {
+	Init          func(*callback.Registry) error
+	Teardown      func() error
+	NewConnection func(irc.HandlerRegistry)
+	Disconnected  func()
+	inited        bool
 }
 
-var (
-	pluginSetup    setupInfo
-	pluginTeardown setupInfo
+const (
+	StatePreInit = iota
+	StatePostInit
+	StatePostTeardown
 )
 
-func RegisterSetup(f func(irc.HandlerRegistry, *callback.Registry) error) {
-	pluginSetup.Lock()
-	defer pluginSetup.Unlock()
-	if pluginSetup.Done != nil {
-		panic("setup was already invoked")
-	}
-	pluginSetup.Funcs = append(pluginSetup.Funcs, func(args ...interface{}) error {
-		return f(args[0].(irc.HandlerRegistry), args[1].(*callback.Registry))
-	})
+var pluginState struct {
+	sync.Mutex
+	Callbacks []Callbacks
+	State     int
 }
 
-func RegisterTeardown(f func() error) {
-	pluginTeardown.Lock()
-	defer pluginTeardown.Unlock()
-	if pluginTeardown.Done != nil {
-		panic("teardown was already invoked")
+func RegisterCallbacks(callbacks Callbacks) {
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	if pluginState.State != StatePreInit {
+		panic("setup was already invoked")
 	}
-	pluginTeardown.Funcs = append(pluginTeardown.Funcs, func(args ...interface{}) error {
-		return f()
-	})
+	pluginState.Callbacks = append(pluginState.Callbacks, callbacks)
 }
 
 // Some utility functions for connections
@@ -125,53 +120,67 @@ func (c IrcConn) CTCPReplyN(dst, cmd, args string, n int) {
 
 var registry *callback.Registry
 
-func InvokeSetup(reg irc.HandlerRegistry) {
-	invoke(&pluginSetup, "setup", func() {
-		registry = callback.NewRegistry(callback.DispatchSerial)
-	}, func() {
-		InvokeTeardown()
-		os.Exit(1)
-	}, func(f func(...interface{}) error) error {
-		return f(reg, registry)
-	})
+// InvokeInit stops at the first error
+func InvokeInit() error {
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	if pluginState.State != StatePreInit {
+		panic("InvokeInit called after init")
+	}
+	pluginState.State = StatePostInit
+	registry = callback.NewRegistry(callback.DispatchSerial)
+	for _, callbacks := range pluginState.Callbacks {
+		if callbacks.Init != nil {
+			if err := callbacks.Init(registry); err != nil {
+				return err
+			}
+		}
+		callbacks.inited = true
+	}
+	return nil
+}
+
+func InvokeNewConnection(reg irc.HandlerRegistry) {
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	if pluginState.State != StatePostInit {
+		panic("InvokeNewConnection called in wrong state")
+	}
+	for _, callbacks := range pluginState.Callbacks {
+		if callbacks.NewConnection != nil {
+			callbacks.NewConnection(reg)
+		}
+	}
+}
+
+func InvokeDisconnected() {
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	if pluginState.State != StatePostInit {
+		panic("InvokeDisconnected called in wrong state")
+	}
+	for _, callbacks := range pluginState.Callbacks {
+		if callbacks.Disconnected != nil {
+			callbacks.Disconnected()
+		}
+	}
 }
 
 func InvokeTeardown() {
-	invoke(&pluginTeardown, "teardown", nil, nil, func(f func(...interface{}) error) error {
-		return f()
-	})
-}
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	if pluginState.State != StatePostInit {
+		panic("InvokeTeardown called in wrong state")
+	}
+	pluginState.State = StatePostTeardown
 
-func invoke(info *setupInfo, name string, onInit func(), onErr func(), call func(func(...interface{}) error) error) {
-	var funcs []func(...interface{}) error
-	var done chan struct{}
-	if func() bool {
-		info.Lock()
-		defer info.Unlock()
-		if info.Done != nil {
-			done = info.Done
-			return false
-		}
-		funcs = make([]func(...interface{}) error, len(info.Funcs))
-		copy(funcs, info.Funcs)
-		done = make(chan struct{}, 1)
-		info.Done = done
-		if onInit != nil {
-			onInit()
-		}
-		return true
-	}() {
-		for _, f := range funcs {
-			if err := call(f); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				if onErr != nil {
-					onErr()
-				}
+	for _, callbacks := range pluginState.Callbacks {
+		if callbacks.inited && callbacks.Teardown != nil {
+			if err := callbacks.Teardown(); err != nil {
+				fmt.Println("error during teardown:", err)
 			}
 		}
-		done <- struct{}{}
-	} else {
-		done <- <-done
+		callbacks.inited = false
 	}
 }
 

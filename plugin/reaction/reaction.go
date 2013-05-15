@@ -11,10 +11,10 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
 }
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setup(reg *callback.Registry) error {
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		reply := dst
 		if dst == conn.Me().Nick {

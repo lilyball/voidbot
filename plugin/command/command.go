@@ -11,13 +11,25 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: pluginInit, NewConnection: setup, Teardown: pluginTeardown})
 }
 
 const commandPrefix = "!"
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
-	hreg.AddHandler("PRIVMSG", func(conn *irc.Conn, line irc.Line) {
+var pluginReg *callback.Registry
+
+func pluginInit(reg *callback.Registry) error {
+	pluginReg = reg
+	return nil
+}
+
+func pluginTeardown() error {
+	pluginReg = nil
+	return nil
+}
+
+func setup(reg irc.HandlerRegistry) {
+	reg.AddHandler("PRIVMSG", func(conn *irc.Conn, line irc.Line) {
 		if len(line.Args) != 2 {
 			// malformed line?
 			return
@@ -38,22 +50,21 @@ func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
 			if !isChannelName(reply) {
 				reply, isPrivate = line.Src.Nick, true
 			}
-			reg.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
+			pluginReg.Dispatch("COMMAND", conn, line, cmd, arg, reply, isPrivate)
 		} else if isChannelName(dst) {
-			reg.Dispatch("PRIVMSG", conn, line, dst, text)
+			pluginReg.Dispatch("PRIVMSG", conn, line, dst, text)
 		} else if dst == conn.Me().Nick {
-			reg.Dispatch("WHISPER", conn, line, text)
+			pluginReg.Dispatch("WHISPER", conn, line, text)
 		} else {
 			fmt.Println("Unknown destination on PRIVMSG:", line.Raw)
 		}
 	})
-	hreg.AddHandler(irc.ACTION, func(conn *irc.Conn, line irc.Line) {
+	reg.AddHandler(irc.ACTION, func(conn *irc.Conn, line irc.Line) {
 		dst := line.Dst
 		text := line.Args[0]
 		isPrivate := !isChannelName(dst)
-		reg.Dispatch("ACTION", conn, line, dst, text, isPrivate)
+		pluginReg.Dispatch("ACTION", conn, line, dst, text, isPrivate)
 	})
-	return nil
 }
 
 func isChannelName(name string) bool {

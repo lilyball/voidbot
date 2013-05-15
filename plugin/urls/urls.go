@@ -18,11 +18,10 @@ var URLRegex = regexp.MustCompile("(?i)\\b((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|
 var historyDB *sql.DB
 
 func init() {
-	plugin.RegisterSetup(setupURLs)
-	plugin.RegisterTeardown(teardownURLs)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setupURLs, Teardown: teardownURLs})
 }
 
-func setupURLs(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setupURLs(reg *callback.Registry) error {
 	var err error
 	historyDB, err = sql.Open("sqlite3", "./history.db")
 	if err != nil {

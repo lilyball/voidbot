@@ -12,10 +12,10 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
 }
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setup(reg *callback.Registry) error {
 	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd, arg, reply string, isPrivate bool) {
 		if cmd == "alpha" {
 			arg = strings.TrimSpace(arg)

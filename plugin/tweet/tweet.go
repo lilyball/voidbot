@@ -29,10 +29,10 @@ func (t Tweet) Valid() bool {
 }
 
 func init() {
-	plugin.RegisterSetup(setupTweet)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setupTweet})
 }
 
-func setupTweet(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setupTweet(reg *callback.Registry) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "twitter.com" || url.Host == "www.twitter.com" {

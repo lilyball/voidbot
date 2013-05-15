@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
 }
 
 type Video struct {
@@ -29,7 +29,7 @@ func (v Video) String() string {
 	return fmt.Sprintf("%s | %s | %s", v.Title, durs, v.URL)
 }
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setup(reg *callback.Registry) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "vimeo.com" || url.Host == "www.vimeo.com" {

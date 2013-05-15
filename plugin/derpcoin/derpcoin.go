@@ -14,14 +14,14 @@ import (
 )
 
 func init() {
-	plugin.RegisterSetup(setup)
+	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
 }
 
 var enabled = true
 
 var btcRegex = regexp.MustCompile("(?i)(\\d+(?:\\.\\d*)?|\\.\\d+) ?btcs?\\b")
 
-func setup(hreg irc.HandlerRegistry, reg *callback.Registry) error {
+func setup(reg *callback.Registry) error {
 	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd string, arg string, reply string, isPrivate bool) {
 		if cmd == "derpcoin" && !isPrivate {
 			arg = strings.ToLower(strings.TrimSpace(arg))
