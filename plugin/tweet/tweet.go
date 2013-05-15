@@ -81,22 +81,14 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 	}
 
 	var tweet Tweet
-	var f func(*html.Node)
-	f = func(n *html.Node) {
+	var tf func(*html.Node)
+	tf = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			classes := classMap(n)
 			if classes["tweet-text"] {
 				tweet.Tweet = nodeString(n)
 			} else if classes["tweet-timestamp"] {
-				p := n.Parent
-				if p != nil {
-					p = p.Parent
-					if p != nil {
-						if p.Type == html.ElementNode && classMap(p)["permalink-header"] {
-							tweet.Timestamp = nodeAttr(n, "title")
-						}
-					}
-				}
+				tweet.Timestamp = nodeAttr(n, "title")
 			} else if classes["original-tweet"] {
 				tweet.Fullname = nodeAttr(n, "data-name")
 				username := nodeAttr(n, "data-screen-name")
@@ -106,8 +98,24 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 			}
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
+			tf(c)
 		}
+	}
+	var f func(*html.Node) bool
+	f = func(n *html.Node) bool {
+		if n.Type == html.ElementNode {
+			classes := classMap(n)
+			if classes["permalink-tweet"] {
+				tf(n)
+				return true
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if f(c) {
+				return true
+			}
+		}
+		return false
 	}
 	f(doc)
 
