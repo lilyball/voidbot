@@ -9,12 +9,30 @@ import (
 	"strings"
 )
 
-func handleStdin(conn irc.SafeConn, quit chan<- struct{}) {
+type Stdin struct {
+	c chan irc.SafeConn
+}
+
+func NewStdin(conn irc.SafeConn) *Stdin {
+	c := make(chan irc.SafeConn, 1)
+	c <- conn
+	return &Stdin{c: c}
+}
+
+func (s *Stdin) WithConn(f func(conn irc.SafeConn)) {
+	conn := <-s.c
+	defer func() { s.c <- conn }()
+	f(conn)
+}
+
+func (s *Stdin) Run(quit chan<- struct{}) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := scanner.Text()
 		if strings.TrimSpace(text) != "" {
-			handleInputLine(conn, text)
+			s.WithConn(func(conn irc.SafeConn) {
+				handleInputLine(conn, text)
+			})
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -24,6 +42,11 @@ func handleStdin(conn irc.SafeConn, quit chan<- struct{}) {
 			fmt.Fprintln(os.Stderr, "reading standard input:", err)
 		}
 	}
+}
+
+func (s *Stdin) ReplaceConn(conn irc.SafeConn) {
+	<-s.c
+	s.c <- conn
 }
 
 func handleInputLine(conn irc.SafeConn, text string) {
