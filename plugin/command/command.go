@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterPlugin("command", plugin.Callbacks{Init: pluginInit, NewConnection: setup, Teardown: pluginTeardown})
+	plugin.RegisterPlugin("", plugin.Callbacks{Init: pluginInit, NewConnection: setup, Teardown: pluginTeardown})
 }
 
 const commandPrefix = "!"

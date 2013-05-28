@@ -13,6 +13,7 @@ import (
 type Plugin struct {
 	Name      string
 	Callbacks Callbacks
+	inited    bool
 }
 
 type Callbacks struct {
@@ -20,7 +21,6 @@ type Callbacks struct {
 	Teardown      func() error
 	NewConnection func(irc.HandlerRegistry)
 	Disconnected  func()
-	inited        bool
 }
 
 const (
@@ -31,7 +31,7 @@ const (
 
 var pluginState struct {
 	sync.Mutex
-	Plugins []Plugin
+	Plugins []*Plugin
 	State   int
 }
 
@@ -41,7 +41,7 @@ func RegisterPlugin(name string, callbacks Callbacks) {
 	if pluginState.State != StatePreInit {
 		panic("setup was already invoked")
 	}
-	pluginState.Plugins = append(pluginState.Plugins, Plugin{Name: name, Callbacks: callbacks})
+	pluginState.Plugins = append(pluginState.Plugins, &Plugin{Name: name, Callbacks: callbacks})
 }
 
 func PluginNames() []string {
@@ -147,6 +147,7 @@ func InvokeInit(plugins []string) error {
 	var pluginMap map[string]bool
 	if plugins != nil {
 		pluginMap = make(map[string]bool, len(plugins))
+		pluginMap[""] = true // always load unnamed plugins, they're for support
 		for _, name := range plugins {
 			pluginMap[name] = true
 		}
@@ -163,7 +164,7 @@ func InvokeInit(plugins []string) error {
 				return err
 			}
 		}
-		callbacks.inited = true
+		plugin.inited = true
 	}
 	return nil
 }
@@ -176,7 +177,7 @@ func InvokeNewConnection(reg irc.HandlerRegistry) {
 	}
 	for _, plugin := range pluginState.Plugins {
 		callbacks := plugin.Callbacks
-		if !callbacks.inited {
+		if !plugin.inited {
 			continue
 		}
 		if callbacks.NewConnection != nil {
@@ -193,7 +194,7 @@ func InvokeDisconnected() {
 	}
 	for _, plugin := range pluginState.Plugins {
 		callbacks := plugin.Callbacks
-		if !callbacks.inited {
+		if !plugin.inited {
 			continue
 		}
 		if callbacks.Disconnected != nil {
@@ -212,12 +213,12 @@ func InvokeTeardown() {
 
 	for _, plugin := range pluginState.Plugins {
 		callbacks := plugin.Callbacks
-		if callbacks.inited && callbacks.Teardown != nil {
+		if plugin.inited && callbacks.Teardown != nil {
 			if err := callbacks.Teardown(); err != nil {
 				fmt.Println("error during teardown:", err)
 			}
 		}
-		callbacks.inited = false
+		plugin.inited = false
 	}
 }
 
