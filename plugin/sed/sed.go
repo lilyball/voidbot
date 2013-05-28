@@ -19,7 +19,7 @@ type Line struct {
 
 var channels map[string]map[string]Line // map[channel name]map[nickname]Line
 
-var sedRegex = regexp.MustCompile(`^s/((?:\\/|[^/])+)/((?:\\/|[^/])+)/([ig]*)$`)
+var sedRegex = regexp.MustCompile(`^s/((?:\\/|[^/])+)/((?:\\/|[^/])+)/([ig]*)(?:@(\w+))?$`)
 
 func setup(reg *callback.Registry) error {
 	channels = make(map[string]map[string]Line)
@@ -104,7 +104,11 @@ func newConnection(reg irc.HandlerRegistry) {
 
 func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string) {
 	if lines := channels[dst]; lines != nil {
-		src := line.Src.Nick
+		nick := line.Src.Nick
+		src := matches[4]
+		if src == "" {
+			src = nick
+		}
 		if line, ok := lines[src]; ok {
 			pat := matches[1]
 			ignorecase, global := false, false
@@ -145,8 +149,16 @@ func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string)
 				if line.Action {
 					result = src + " " + result
 				}
-				conn.Privmsg(dst, fmt.Sprintf("%s meant: %s", src, result))
+				infix := "meant"
+				if matches[4] != "" {
+					infix = fmt.Sprintf("thinks %s meant", src)
+				}
+				conn.Privmsg(dst, fmt.Sprintf("%s %s: %s", nick, infix, result))
+			} else {
+				fmt.Printf("sed: non-matching regexp %s against nick %s\n", pat, src)
 			}
+		} else {
+			fmt.Printf("sed: no history known for nick %s\n", src)
 		}
 	}
 }
