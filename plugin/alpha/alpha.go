@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("alpha", plugin.Callbacks{Init: setup})
 }
 
 func setup(reg *callback.Registry) error {

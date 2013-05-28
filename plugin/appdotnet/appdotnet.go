@@ -26,7 +26,7 @@ func (p Post) String() string {
 }
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("appdotnet", plugin.Callbacks{Init: setup})
 }
 
 func setup(reg *callback.Registry) error {

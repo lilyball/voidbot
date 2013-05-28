@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("reaction", plugin.Callbacks{Init: setup})
 }
 
 func setup(reg *callback.Registry) error {

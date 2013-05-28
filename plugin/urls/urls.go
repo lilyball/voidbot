@@ -18,7 +18,7 @@ var URLRegex = regexp.MustCompile("(?i)\\b((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|
 var historyDB *sql.DB
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setupURLs, Teardown: teardownURLs})
+	plugin.RegisterPlugin("urls", plugin.Callbacks{Init: setupURLs, Teardown: teardownURLs})
 }
 
 func setupURLs(reg *callback.Registry) error {

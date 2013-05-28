@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+type Plugin struct {
+	Name      string
+	Callbacks Callbacks
+}
+
 type Callbacks struct {
 	Init          func(*callback.Registry) error
 	Teardown      func() error
@@ -26,17 +31,27 @@ const (
 
 var pluginState struct {
 	sync.Mutex
-	Callbacks []Callbacks
-	State     int
+	Plugins []Plugin
+	State   int
 }
 
-func RegisterCallbacks(callbacks Callbacks) {
+func RegisterPlugin(name string, callbacks Callbacks) {
 	pluginState.Lock()
 	defer pluginState.Unlock()
 	if pluginState.State != StatePreInit {
 		panic("setup was already invoked")
 	}
-	pluginState.Callbacks = append(pluginState.Callbacks, callbacks)
+	pluginState.Plugins = append(pluginState.Plugins, Plugin{Name: name, Callbacks: callbacks})
+}
+
+func PluginNames() []string {
+	pluginState.Lock()
+	defer pluginState.Unlock()
+	names := make([]string, 0, len(pluginState.Plugins))
+	for _, plugin := range pluginState.Plugins {
+		names = append(names, plugin.Name)
+	}
+	return names
 }
 
 // Some utility functions for connections
@@ -121,15 +136,28 @@ func (c IrcConn) CTCPReplyN(dst, cmd, args string, n int) {
 var registry *callback.Registry
 
 // InvokeInit stops at the first error
-func InvokeInit() error {
+// If plugins is nil, all plugins are inited.
+// Otherwise, only the listed plugins are inited.
+func InvokeInit(plugins []string) error {
 	pluginState.Lock()
 	defer pluginState.Unlock()
 	if pluginState.State != StatePreInit {
 		panic("InvokeInit called after init")
 	}
+	var pluginMap map[string]bool
+	if plugins != nil {
+		pluginMap = make(map[string]bool, len(plugins))
+		for _, name := range plugins {
+			pluginMap[name] = true
+		}
+	}
 	pluginState.State = StatePostInit
 	registry = callback.NewRegistry(callback.DispatchSerial)
-	for _, callbacks := range pluginState.Callbacks {
+	for _, plugin := range pluginState.Plugins {
+		if pluginMap != nil && !pluginMap[plugin.Name] {
+			continue
+		}
+		callbacks := plugin.Callbacks
 		if callbacks.Init != nil {
 			if err := callbacks.Init(registry); err != nil {
 				return err
@@ -146,7 +174,11 @@ func InvokeNewConnection(reg irc.HandlerRegistry) {
 	if pluginState.State != StatePostInit {
 		panic("InvokeNewConnection called in wrong state")
 	}
-	for _, callbacks := range pluginState.Callbacks {
+	for _, plugin := range pluginState.Plugins {
+		callbacks := plugin.Callbacks
+		if !callbacks.inited {
+			continue
+		}
 		if callbacks.NewConnection != nil {
 			callbacks.NewConnection(reg)
 		}
@@ -159,7 +191,11 @@ func InvokeDisconnected() {
 	if pluginState.State != StatePostInit {
 		panic("InvokeDisconnected called in wrong state")
 	}
-	for _, callbacks := range pluginState.Callbacks {
+	for _, plugin := range pluginState.Plugins {
+		callbacks := plugin.Callbacks
+		if !callbacks.inited {
+			continue
+		}
 		if callbacks.Disconnected != nil {
 			callbacks.Disconnected()
 		}
@@ -174,7 +210,8 @@ func InvokeTeardown() {
 	}
 	pluginState.State = StatePostTeardown
 
-	for _, callbacks := range pluginState.Callbacks {
+	for _, plugin := range pluginState.Plugins {
+		callbacks := plugin.Callbacks
 		if callbacks.inited && callbacks.Teardown != nil {
 			if err := callbacks.Teardown(); err != nil {
 				fmt.Println("error during teardown:", err)

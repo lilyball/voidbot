@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("vimeo", plugin.Callbacks{Init: setup})
 }
 
 type Video struct {

@@ -30,7 +30,7 @@ func (v Video) String() string {
 }
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("youtube", plugin.Callbacks{Init: setup})
 }
 
 func setup(reg *callback.Registry) error {

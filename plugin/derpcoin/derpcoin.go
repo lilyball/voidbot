@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("derpcoin", plugin.Callbacks{Init: setup})
 }
 
 var enabled = true

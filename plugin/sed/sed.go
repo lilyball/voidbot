@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setup, NewConnection: newConnection})
+	plugin.RegisterPlugin("sed", plugin.Callbacks{Init: setup, NewConnection: newConnection})
 }
 
 type Line struct {

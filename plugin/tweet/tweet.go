@@ -29,7 +29,7 @@ func (t Tweet) Valid() bool {
 }
 
 func init() {
-	plugin.RegisterCallbacks(plugin.Callbacks{Init: setupTweet})
+	plugin.RegisterPlugin("tweet", plugin.Callbacks{Init: setupTweet})
 }
 
 func setupTweet(reg *callback.Registry) error {

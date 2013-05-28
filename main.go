@@ -4,11 +4,40 @@ import (
 	"./plugin"
 	"fmt"
 	"github.com/kballard/goirc/irc"
+	"io"
+	"io/ioutil"
+	"launchpad.net/goyaml"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
+type Config struct {
+	Server     string `yaml:"server"`
+	Port       uint   `yaml:"port"`
+	UseSSL     bool   `yaml:"ssl"`
+	ServerPass string `yaml:"serverpass"`
+
+	Nick     string `yaml:"nick"`
+	User     string `yaml:"user"`
+	RealName string `yaml:"realname"`
+
+	Plugins []string `yaml:"plugins"`
+}
+
 func main() {
+	config := checkConfig()
+
+	if config.Server == "" {
+		fmt.Fprintln(os.Stderr, "error: No valid server found in config.yaml")
+		os.Exit(1)
+	} else if config.Nick == "" || config.User == "" || config.RealName == "" {
+		fmt.Fprintln(os.Stderr, "error: No valid user data found in config.yaml")
+		os.Exit(1)
+	} else if config.Plugins != nil && len(config.Plugins) == 0 {
+		fmt.Fprintln(os.Stderr, "warning: You have no plugins enabled. This bot will do nothing.")
+	}
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 	interrupt := make(chan struct{}, 1)
@@ -21,7 +50,7 @@ func main() {
 		}
 	}()
 
-	if err := plugin.InvokeInit(); err != nil {
+	if err := plugin.InvokeInit(config.Plugins); err != nil {
 		fmt.Println("error in plugin init:", err)
 		plugin.InvokeTeardown()
 		return
@@ -31,13 +60,14 @@ func main() {
 	var stdin *Stdin
 	for {
 		config := irc.Config{
-			Host: "chat.freenode.net",
-			SSL:  true,
+			Host: config.Server,
+			Port: config.Port,
+			SSL:  config.UseSSL,
 
-			Nick:     "voidbot",
-			User:     "voidbot",
-			RealName: "#voidptr bot",
-			Password: "voidbot:redacted",
+			Nick:     config.Nick,
+			User:     config.User,
+			RealName: config.RealName,
+			Password: config.ServerPass,
 
 			Init: func(reg irc.HandlerRegistry) {
 				fmt.Println("Bot started")
@@ -134,4 +164,42 @@ func main() {
 	plugin.InvokeTeardown()
 
 	fmt.Println("Goodbye")
+}
+
+func checkConfig() Config {
+	bytes, err := ioutil.ReadFile("config.yaml")
+	if err != nil {
+		if perr, ok := err.(*os.PathError); ok && (perr.Err == os.ErrNotExist || perr.Err == syscall.ENOENT) {
+			if err := writeSampleConfig(); err != nil {
+				fmt.Fprintf(os.Stderr, "Config file not found. An error occurred while trying to write the sample config: %s\n", err)
+				os.Exit(1)
+			} else {
+				fmt.Fprintln(os.Stderr, "Config file not found. A sample config has been written out as config.yaml")
+				os.Exit(2)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "An error occurred while reading the config: %s\n", err)
+			os.Exit(1)
+		}
+	}
+	var config Config
+	if err := goyaml.Unmarshal(bytes, &config); err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred while reading config.yaml: %s", err)
+		os.Exit(1)
+	}
+	return config
+}
+
+func writeSampleConfig() error {
+	in, err := os.Open("config.yaml.tmpl")
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create("config.yaml")
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	return err
 }
