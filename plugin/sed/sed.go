@@ -106,8 +106,10 @@ func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string)
 	if lines := channels[dst]; lines != nil {
 		nick := line.Src.Nick
 		src := matches[4]
+		isSelf := false
 		if src == "" {
 			src = nick
+			isSelf = true
 		}
 		if line, ok := lines[src]; ok {
 			pat := matches[1]
@@ -144,13 +146,15 @@ func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string)
 				result = string(bresult)
 			}
 			if result != line.Msg {
-				line.Msg = result
-				lines[src] = line
+				if isSelf {
+					line.Msg = result
+					lines[src] = line
+				}
 				if line.Action {
 					result = src + " " + result
 				}
 				infix := "meant"
-				if matches[4] != "" {
+				if !isSelf {
 					infix = fmt.Sprintf("thinks %s meant", src)
 				}
 				conn.Privmsg(dst, fmt.Sprintf("%s %s: %s", nick, infix, result))
