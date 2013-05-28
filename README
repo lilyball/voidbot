@@ -1,0 +1,7 @@
+# voidbot
+
+voidbot is an IRC bot written in go, based on the kballard/goirc library.
+
+Build the bot with `go build`, and run it once to produce the configuration
+file (named config.yaml). Edit this config file with your desired settings and
+run again.
