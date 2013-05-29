@@ -19,7 +19,7 @@ type Line struct {
 
 var channels map[string]map[string]Line // map[channel name]map[nickname]Line
 
-var sedRegex = regexp.MustCompile(`^s/((?:\\/|[^/])+)/((?:\\/|[^/])+)/([ig]*)(?:@(\w+))?\s*$`)
+var sedRegex = regexp.MustCompile(`^s/((?:\\.|[^/])+)/((?:\\.|[^/])*)/([ig]*)(?:@(\w+))?\s*$`)
 
 func setup(reg *callback.Registry) error {
 	channels = make(map[string]map[string]Line)
