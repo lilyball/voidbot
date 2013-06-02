@@ -39,6 +39,8 @@ func setup(reg *callback.Registry) error {
 			plugin.Conn(conn).Privmsg(reply, prefix+randResponse([]string{"yes", "always"}))
 		} else if isDirected && strings.ToLower(text) == "botsnack" {
 			plugin.Conn(conn).Privmsg(reply, prefix+randResponse([]string{"yum", "nom nom", "om nom nom"}))
+		} else if isDirected && text == "<3" {
+			plugin.Conn(conn).Privmsg(reply, prefix+"<3")
 		}
 	})
 	return nil
