@@ -94,4 +94,13 @@ var inputCommands = map[string]func(irc.SafeConn, string){
 		fmt.Printf("--> %s ACTION: %s %s\n", words[0], conn.Me().Nick, words[1])
 		conn.Action(words[0], words[1])
 	},
+	"nick": func(conn irc.SafeConn, text string) {
+		words := strings.SplitN(text, " ", 2)
+		if len(words) != 1 || words[0] == "" {
+			fmt.Fprintln(os.Stderr, "usage: /nick nickname")
+			return
+		}
+		fmt.Printf("--> NICK: %s\n", words[0])
+		conn.Nick(words[0])
+	},
 }
