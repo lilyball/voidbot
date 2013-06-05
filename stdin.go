@@ -58,7 +58,7 @@ func handleInputLine(conn irc.SafeConn, text string) {
 	cmd = cmd[1:]
 
 	if f, ok := inputCommands[cmd]; ok {
-		f(conn, words[1])
+		f(conn, append(words, "")[1])
 	}
 }
 
