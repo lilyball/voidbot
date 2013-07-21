@@ -22,6 +22,8 @@ type Config struct {
 	User     string `yaml:"user"`
 	RealName string `yaml:"realname"`
 
+	AutoJoin []string `yaml:"autojoin"`
+
 	Plugins []string `yaml:"plugins"`
 }
 
@@ -56,6 +58,8 @@ func main() {
 		return
 	}
 
+	autojoin := config.AutoJoin
+
 	discon := make(chan struct{}, 1)
 	var stdin *Stdin
 	for {
@@ -73,7 +77,11 @@ func main() {
 				fmt.Println("Bot started")
 				reg.AddHandler(irc.CONNECTED, func(conn *irc.Conn, line irc.Line) {
 					fmt.Println("Connected")
-					conn.Join([]string{"#voidptr"}, nil)
+					if len(autojoin) > 0 {
+						conn.Join(autojoin, nil)
+					} else {
+						fmt.Println("No channels configured to autojoin")
+					}
 				})
 
 				reg.AddHandler(irc.DISCONNECTED, func(conn *irc.Conn, line irc.Line) {
