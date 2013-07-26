@@ -11,5 +11,6 @@ import (
 	_ "./plugin/tweet"
 	_ "./plugin/urls"
 	_ "./plugin/vimeo"
+	_ "./plugin/vine"
 	_ "./plugin/youtube"
 )

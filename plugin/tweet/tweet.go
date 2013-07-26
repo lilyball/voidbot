@@ -2,6 +2,7 @@ package tweet
 
 import (
 	"../"
+	"../../utils"
 	"code.google.com/p/go.net/html"
 	"fmt"
 	"github.com/kballard/gocallback/callback"
@@ -84,14 +85,14 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 	var tf func(*html.Node)
 	tf = func(n *html.Node) {
 		if n.Type == html.ElementNode {
-			classes := classMap(n)
+			classes := utils.ClassMap(n)
 			if classes["tweet-text"] {
-				tweet.Tweet = nodeString(n)
+				tweet.Tweet = utils.NodeString(n)
 			} else if classes["tweet-timestamp"] {
-				tweet.Timestamp = nodeAttr(n, "title")
+				tweet.Timestamp = utils.NodeAttr(n, "title")
 			} else if classes["original-tweet"] {
-				tweet.Fullname = nodeAttr(n, "data-name")
-				username := nodeAttr(n, "data-screen-name")
+				tweet.Fullname = utils.NodeAttr(n, "data-name")
+				username := utils.NodeAttr(n, "data-screen-name")
 				if username != "" {
 					tweet.Username = "@" + username
 				}
@@ -104,7 +105,7 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 	var f func(*html.Node) bool
 	f = func(n *html.Node) bool {
 		if n.Type == html.ElementNode {
-			classes := classMap(n)
+			classes := utils.ClassMap(n)
 			if classes["permalink-tweet"] {
 				tf(n)
 				return true
@@ -124,45 +125,4 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 	} else {
 		fmt.Println("Could not find tweet in page", url)
 	}
-}
-
-func nodeAttr(node *html.Node, attr string) string {
-	if node.Type == html.ElementNode {
-		for _, at := range node.Attr {
-			if at.Namespace == "" && at.Key == attr {
-				return at.Val
-			}
-		}
-	}
-	return ""
-}
-
-func classMap(node *html.Node) map[string]bool {
-	if node.Type == html.ElementNode {
-		classes := strings.Split(nodeAttr(node, "class"), " ")
-		results := make(map[string]bool)
-		for _, class := range classes {
-			if class != "" {
-				results[class] = true
-			}
-		}
-		return results
-	}
-	return nil
-}
-
-func nodeString(node *html.Node) string {
-	switch node.Type {
-	case html.TextNode:
-		return node.Data
-	case html.DocumentNode:
-		fallthrough
-	case html.ElementNode:
-		var result string
-		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			result = result + nodeString(c)
-		}
-		return result
-	}
-	return ""
 }
