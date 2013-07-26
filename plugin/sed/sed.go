@@ -157,7 +157,7 @@ func processMatches(conn *irc.Conn, line irc.Line, dst string, matches []string)
 				if !isSelf {
 					infix = fmt.Sprintf("thinks %s meant", src)
 				}
-				conn.Privmsg(dst, fmt.Sprintf("%s %s: %s", nick, infix, result))
+				conn.Notice(dst, fmt.Sprintf("%s %s: %s", nick, infix, result))
 			} else {
 				fmt.Printf("sed: non-matching regexp %s against nick %s\n", pat, src)
 			}

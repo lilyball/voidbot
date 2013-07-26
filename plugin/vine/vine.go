@@ -131,7 +131,7 @@ func processVineURL(conn plugin.IrcConn, line irc.Line, dst string, url *url.URL
 	f(doc)
 
 	if vine.Valid() {
-		conn.PrivmsgN(dst, "\00300,03\002Vine\017 | "+vine.String(), 4)
+		conn.NoticeN(dst, "\00300,03\002Vine\017 | "+vine.String(), 4)
 	} else {
 		fmt.Println("Could not find vine in page", url)
 	}

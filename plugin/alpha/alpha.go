@@ -20,7 +20,7 @@ func setup(reg *callback.Registry) error {
 		if cmd == "alpha" {
 			arg = strings.TrimSpace(arg)
 			if arg == "" {
-				plugin.Conn(conn).Privmsg(reply, "!alpha requires an argument")
+				plugin.Conn(conn).Notice(reply, "!alpha requires an argument")
 			} else {
 				go runQuery(plugin.Conn(conn), arg, reply)
 			}
@@ -103,34 +103,34 @@ func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, reca
 	}
 
 	if !reinterpret {
-		conn.Privmsg(reply, header+" Using closest Wolfram|Alpha interpretation: "+query)
+		conn.Notice(reply, header+" Using closest Wolfram|Alpha interpretation: "+query)
 	}
 	if !result.IsSuccess {
 		if result.ParseTimedOut {
-			conn.Privmsg(reply, header+" error: parse timed out")
+			conn.Notice(reply, header+" error: parse timed out")
 		} else if !result.IsError {
 			if len(result.DidYouMeans) > 0 && recalculate {
 				text := result.DidYouMeans[0].Text
 				runAPICall(conn, reply, text, constructURL(text), false, true)
 			} else if result.FutureTopic != nil {
-				conn.Privmsg(reply, fmt.Sprintf("%s %s: %s", header, result.FutureTopic.Topic, result.FutureTopic.Msg))
+				conn.Notice(reply, fmt.Sprintf("%s %s: %s", header, result.FutureTopic.Topic, result.FutureTopic.Msg))
 			} else {
 				msg := header + " Wolfram|Alpha doesn't know how to interpret your query"
 				if len(result.Tips) > 0 {
 					msg += ". " + result.Tips[0].Text
 				}
-				conn.Privmsg(reply, msg)
+				conn.Notice(reply, msg)
 			}
 		} else {
-			conn.PrivmsgN(reply, header+" error: "+result.Error.Msg, 5)
+			conn.NoticeN(reply, header+" error: "+result.Error.Msg, 5)
 		}
 	} else if len(result.Pods) == 0 {
 		if result.Recalculate != "" && recalculate {
 			runAPICall(conn, reply, query, result.Recalculate, reinterpret, false)
 		} else if result.TimedOut != "" {
-			conn.Privmsg(reply, header+" timed out: "+result.TimedOut)
+			conn.Notice(reply, header+" timed out: "+result.TimedOut)
 		} else {
-			conn.Privmsg(reply, header+" Malformed results from API")
+			conn.Notice(reply, header+" Malformed results from API")
 		}
 	} else {
 		pod := result.Pods[0]
@@ -148,7 +148,7 @@ func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, reca
 			}
 		}
 		if pod.IsError {
-			conn.PrivmsgN(reply, header+" error: "+pod.Error.Msg, 5)
+			conn.NoticeN(reply, header+" error: "+pod.Error.Msg, 5)
 		} else {
 			// use the primary subpod, if it has a non-empty plaintext.
 			// otherwise, use the first subpod with a non-empty plaintext
@@ -164,9 +164,9 @@ func runAPICall(conn plugin.IrcConn, reply, query, url string, reinterpret, reca
 				}
 			}
 			if subpod == nil {
-				conn.Privmsg(reply, header+" Couldn't find plain text representation of answer")
+				conn.Notice(reply, header+" Couldn't find plain text representation of answer")
 			} else {
-				conn.PrivmsgN(reply, fmt.Sprintf("%s %s: %s", header, pod.Title, subpod.Plaintext), 5)
+				conn.NoticeN(reply, fmt.Sprintf("%s %s: %s", header, pod.Title, subpod.Plaintext), 5)
 			}
 		}
 	}

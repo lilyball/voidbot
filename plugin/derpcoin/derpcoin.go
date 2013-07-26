@@ -32,19 +32,19 @@ func setup(reg *callback.Registry) error {
 				} else {
 					msg += "OFF"
 				}
-				plugin.Conn(conn).Privmsg(reply, msg)
+				plugin.Conn(conn).Notice(reply, msg)
 			} else if arg == "on" || arg == "off" {
 				if line.Src.Nick == "Me1000" {
-					plugin.Conn(conn).Privmsg(reply, "no")
+					plugin.Conn(conn).Notice(reply, "no")
 				} else if arg == "on" {
 					enabled = true
-					plugin.Conn(conn).Privmsg(reply, "derpcoin enabled")
+					plugin.Conn(conn).Notice(reply, "derpcoin enabled")
 				} else if arg == "off" {
 					enabled = false
-					plugin.Conn(conn).Privmsg(reply, "derpcoin disabled")
+					plugin.Conn(conn).Notice(reply, "derpcoin disabled")
 				}
 			} else {
-				plugin.Conn(conn).Privmsg(reply, "derp?")
+				plugin.Conn(conn).Notice(reply, "derp?")
 			}
 		}
 	})
@@ -52,7 +52,7 @@ func setup(reg *callback.Registry) error {
 		if enabled {
 			derptext := utils.ReplaceAllFold(text, "bitcoin", "derpcoin")
 			if derptext != "" {
-				plugin.Conn(conn).Privmsg(dst, derptext)
+				plugin.Conn(conn).Notice(dst, derptext)
 				return
 			}
 			if subs := btcRegex.FindStringSubmatch(text); subs != nil {
@@ -63,7 +63,7 @@ func setup(reg *callback.Registry) error {
 					val *= exchangeRate
 					val = math.Floor(val*100.0) / 100.0
 					msg := fmt.Sprintf("%s: that's almost $%.2f!", line.Src.Nick, val)
-					plugin.Conn(conn).Privmsg(dst, msg)
+					plugin.Conn(conn).Notice(dst, msg)
 				}
 			}
 		}

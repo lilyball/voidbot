@@ -64,5 +64,5 @@ func handleVimeo(conn plugin.IrcConn, line irc.Line, dst, video_id string) {
 		fmt.Println("vimeo:", err)
 		return
 	}
-	conn.Privmsg(dst, "\0030,11vimeo\017 | "+videos.Video.String())
+	conn.Notice(dst, "\0030,11vimeo\017 | "+videos.Video.String())
 }

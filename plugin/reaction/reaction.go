@@ -34,13 +34,13 @@ func setup(reg *callback.Registry) error {
 		}
 		// implement super awesome reaction logic here
 		if strings.ToLower(text) == "herp" {
-			plugin.Conn(conn).Privmsg(reply, prefix+utils.MatchCase("derp", text))
+			plugin.Conn(conn).Notice(reply, prefix+utils.MatchCase("derp", text))
 		} else if strings.ToLower(text) == "is me1000 drunk?" || (line.Src.Nick == "Me1000" && strings.ToLower(text) == "am i drunk?") {
-			plugin.Conn(conn).Privmsg(reply, prefix+randResponse([]string{"yes", "always"}))
+			plugin.Conn(conn).Notice(reply, prefix+randResponse([]string{"yes", "always"}))
 		} else if isDirected && strings.ToLower(text) == "botsnack" {
-			plugin.Conn(conn).Privmsg(reply, prefix+randResponse([]string{"yum", "nom nom", "om nom nom"}))
+			plugin.Conn(conn).Notice(reply, prefix+randResponse([]string{"yum", "nom nom", "om nom nom"}))
 		} else if isDirected && text == "<3" {
-			plugin.Conn(conn).Privmsg(reply, prefix+"<3")
+			plugin.Conn(conn).Notice(reply, prefix+"<3")
 		}
 	})
 	return nil

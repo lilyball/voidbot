@@ -104,7 +104,7 @@ func (c IrcConn) Notice(dst, msg string) {
 func (c IrcConn) NoticeN(dst, msg string, n int) {
 	lines := msgToLinesN(msg, n)
 	for _, line := range lines {
-		logLine("NOTICE[%s]: %s\n", dst, utils.ColorToANSI(line))
+		logLine("NOTICE[%s]: %s", dst, utils.ColorToANSI(line))
 		c.conn.Notice(dst, line)
 	}
 }
@@ -228,4 +228,10 @@ func InvokeTeardown() {
 // to a Privmsg command with the given destination.
 func AllowedPrivmsgTextLength(dst string) int {
 	return 510 - len("PRIVMSG ") - len(dst) - len(" :")
+}
+
+// AllowedNoticeTextLength returns the amount of text that can be safely given
+// to a Notice command with the given destination.
+func AllowedNoticeTextLength(dst string) int {
+	return 510 - len("NOTICE ") - len(dst) - len(" :")
 }

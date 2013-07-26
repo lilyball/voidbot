@@ -85,7 +85,7 @@ func queryStocks(stocks []string, conn plugin.IrcConn, reply string) {
 		return
 	}
 	// return multiple quotes on one line.
-	maxLength := plugin.AllowedPrivmsgTextLength(reply)
+	maxLength := plugin.AllowedNoticeTextLength(reply)
 	lines := make([]string, 1)
 	const sep = "  |  "
 	for _, quote := range quotes {
@@ -104,7 +104,7 @@ func queryStocks(stocks []string, conn plugin.IrcConn, reply string) {
 		}
 	}
 	for _, line := range lines {
-		conn.Privmsg(reply, line)
+		conn.Notice(reply, line)
 	}
 }
 

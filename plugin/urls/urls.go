@@ -116,7 +116,7 @@ func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url *url.U
 		lastSeen := formatDuration(delta)
 
 		msg := fmt.Sprintf("URL '%s' was last seen %s ago by %s (%d total)", url, lastSeen, nick, count)
-		plugin.Conn(conn).Privmsg(dst, msg)
+		plugin.Conn(conn).Notice(dst, msg)
 	}
 }
 

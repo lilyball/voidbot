@@ -75,7 +75,7 @@ func handleYoutubeVideo(conn plugin.IrcConn, line irc.Line, dst, key, fragment s
 	v.Key = key
 	v.Fragment = fragment
 
-	conn.Privmsg(dst, "\0031,15You\0030,5Tube\017 | "+v.String())
+	conn.Notice(dst, "\0031,15You\0030,5Tube\017 | "+v.String())
 }
 
 type Feed struct {

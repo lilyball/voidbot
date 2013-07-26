@@ -88,5 +88,5 @@ func fetchADNPost(conn plugin.IrcConn, line irc.Line, dst, id string) {
 		Timestamp: payload.Data.Timestamp,
 	}
 
-	conn.PrivmsgN(dst, post.String(), 4)
+	conn.NoticeN(dst, post.String(), 4)
 }
