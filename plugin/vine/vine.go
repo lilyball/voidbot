@@ -31,7 +31,7 @@ func init() {
 	plugin.RegisterPlugin("vine", plugin.Callbacks{Init: setupVine})
 }
 
-func setupVine(reg *callback.Registry) error {
+func setupVine(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "vine.co" || url.Host == "www.vine.co" {

@@ -15,7 +15,7 @@ func init() {
 	plugin.RegisterPlugin("alpha", plugin.Callbacks{Init: setup})
 }
 
-func setup(reg *callback.Registry) error {
+func setup(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd, arg, reply string, isPrivate bool) {
 		if cmd == "alpha" {
 			arg = strings.TrimSpace(arg)

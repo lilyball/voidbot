@@ -33,7 +33,7 @@ func init() {
 	plugin.RegisterPlugin("tweet", plugin.Callbacks{Init: setupTweet})
 }
 
-func setupTweet(reg *callback.Registry) error {
+func setupTweet(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "twitter.com" || url.Host == "www.twitter.com" {

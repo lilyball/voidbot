@@ -39,7 +39,7 @@ type Quote struct {
 	Error              string `xml:"ErrorIndicationreturnedforsymbolchangedinvalid"`
 }
 
-func setup(reg *callback.Registry) error {
+func setup(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		if matches := stockRegex.FindAllString(text, -1); matches != nil {
 			for i, match := range matches {

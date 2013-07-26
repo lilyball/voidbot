@@ -21,7 +21,7 @@ var channels map[string]map[string]Line // map[channel name]map[nickname]Line
 
 var sedRegex = regexp.MustCompile(`^s/((?:\\.|[^/])+)/((?:\\.|[^/])*)/([ig]*)(?:@(\w+))?\s*$`)
 
-func setup(reg *callback.Registry) error {
+func setup(reg *callback.Registry, config map[string]interface{}) error {
 	channels = make(map[string]map[string]Line)
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		if line.Src.Nick == "" {

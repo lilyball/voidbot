@@ -25,6 +25,8 @@ type Config struct {
 	AutoJoin []string `yaml:"autojoin"`
 
 	Plugins []string `yaml:"plugins"`
+
+	PluginConfig map[string]map[string]interface{} `yaml:"config"`
 }
 
 func main() {
@@ -52,7 +54,7 @@ func main() {
 		}
 	}()
 
-	if err := plugin.InvokeInit(config.Plugins); err != nil {
+	if err := plugin.InvokeInit(config.Plugins, config.PluginConfig); err != nil {
 		fmt.Println("error in plugin init:", err)
 		plugin.InvokeTeardown()
 		return

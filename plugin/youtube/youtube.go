@@ -33,7 +33,7 @@ func init() {
 	plugin.RegisterPlugin("youtube", plugin.Callbacks{Init: setup})
 }
 
-func setup(reg *callback.Registry) error {
+func setup(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		if url.Scheme == "http" || url.Scheme == "https" {
 			if url.Host == "youtube.com" || url.Host == "www.youtube.com" {

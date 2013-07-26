@@ -17,7 +17,7 @@ type Plugin struct {
 }
 
 type Callbacks struct {
-	Init          func(*callback.Registry) error
+	Init          func(*callback.Registry, map[string]interface{}) error
 	Teardown      func() error
 	NewConnection func(irc.HandlerRegistry)
 	Disconnected  func()
@@ -138,7 +138,7 @@ var registry *callback.Registry
 // InvokeInit stops at the first error
 // If plugins is nil, all plugins are inited.
 // Otherwise, only the listed plugins are inited.
-func InvokeInit(plugins []string) error {
+func InvokeInit(plugins []string, config map[string]map[string]interface{}) error {
 	pluginState.Lock()
 	defer pluginState.Unlock()
 	if pluginState.State != StatePreInit {
@@ -160,7 +160,7 @@ func InvokeInit(plugins []string) error {
 		}
 		callbacks := plugin.Callbacks
 		if callbacks.Init != nil {
-			if err := callbacks.Init(registry); err != nil {
+			if err := callbacks.Init(registry, config[plugin.Name]); err != nil {
 				return err
 			}
 		}

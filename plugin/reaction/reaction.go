@@ -14,7 +14,7 @@ func init() {
 	plugin.RegisterPlugin("reaction", plugin.Callbacks{Init: setup})
 }
 
-func setup(reg *callback.Registry) error {
+func setup(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		reply := dst
 		if dst == conn.Me().Nick {

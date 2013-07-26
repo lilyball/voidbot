@@ -18,7 +18,7 @@ const commandPrefix = "!"
 
 var pluginReg *callback.Registry
 
-func pluginInit(reg *callback.Registry) error {
+func pluginInit(reg *callback.Registry, config map[string]interface{}) error {
 	pluginReg = reg
 	return nil
 }

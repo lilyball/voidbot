@@ -5,6 +5,7 @@ import (
 	_ "./plugin/appdotnet"
 	_ "./plugin/command"
 	_ "./plugin/derpcoin"
+	_ "./plugin/flickr"
 	_ "./plugin/reaction"
 	_ "./plugin/sed"
 	_ "./plugin/stocks"

@@ -21,7 +21,7 @@ func init() {
 	plugin.RegisterPlugin("urls", plugin.Callbacks{Init: setupURLs, Teardown: teardownURLs})
 }
 
-func setupURLs(reg *callback.Registry) error {
+func setupURLs(reg *callback.Registry, config map[string]interface{}) error {
 	var err error
 	historyDB, err = sql.Open("sqlite3", "./history.db")
 	if err != nil {
