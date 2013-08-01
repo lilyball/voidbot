@@ -3,11 +3,11 @@ package urls
 import (
 	"../"
 	"../command"
+	"../database"
 	"database/sql"
 	"fmt"
 	"github.com/kballard/gocallback/callback"
 	"github.com/kballard/goirc/irc"
-	_ "github.com/mattn/go-sqlite3"
 	"net/url"
 	"os"
 	"regexp"
@@ -25,7 +25,7 @@ func init() {
 
 func setupURLs(reg *callback.Registry, config map[string]interface{}) error {
 	var err error
-	historyDB, err = sql.Open("sqlite3", "./history.db")
+	historyDB, err = database.Open("sqlite3", "./history.db")
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,9 @@ func setupURLs(reg *callback.Registry, config map[string]interface{}) error {
 
 func teardownURLs() error {
 	if historyDB != nil {
-		return historyDB.Close()
+		err := database.Close(historyDB)
+		historyDB = nil
+		return err
 	}
 	return nil
 }
