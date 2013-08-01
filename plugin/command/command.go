@@ -14,7 +14,7 @@ func init() {
 	plugin.RegisterPlugin("", plugin.Callbacks{Init: pluginInit, NewConnection: setup, Teardown: pluginTeardown})
 }
 
-const commandPrefix = "!"
+const CommandPrefix = "!"
 
 var pluginReg *callback.Registry
 
@@ -37,12 +37,12 @@ func setup(reg irc.HandlerRegistry) {
 		dst := line.Args[0]
 		text := line.Args[1]
 
-		if strings.HasPrefix(text, commandPrefix) &&
-			len(text) > len(commandPrefix) &&
-			func() bool { r, _ := utf8.DecodeRuneInString(text[len(commandPrefix):]); return unicode.IsLetter(r) }() {
+		if strings.HasPrefix(text, CommandPrefix) &&
+			len(text) > len(CommandPrefix) &&
+			func() bool { r, _ := utf8.DecodeRuneInString(text[len(CommandPrefix):]); return unicode.IsLetter(r) }() {
 			// this is a command
 			words := strings.SplitN(text, " ", 2)
-			cmd, arg := words[0][len(commandPrefix):], ""
+			cmd, arg := words[0][len(CommandPrefix):], ""
 			if len(words) > 1 {
 				arg = words[1]
 			}

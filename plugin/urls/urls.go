@@ -2,6 +2,7 @@ package urls
 
 import (
 	"../"
+	"../command"
 	"database/sql"
 	"fmt"
 	"github.com/kballard/gocallback/callback"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -53,6 +55,12 @@ func setupURLs(reg *callback.Registry, config map[string]interface{}) error {
 
 	reg.AddCallback("URL", func(conn *irc.Conn, line irc.Line, dst string, url *url.URL) {
 		handleURL(conn, historyDB, line, dst, url)
+	})
+
+	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd, arg, dst string, isPrivate bool) {
+		if cmd == "urls" {
+			handleCommand(conn, historyDB, line, arg, dst, isPrivate)
+		}
 	})
 
 	return nil
@@ -117,6 +125,53 @@ func handleURL(conn *irc.Conn, db *sql.DB, line irc.Line, dst string, url *url.U
 
 		msg := fmt.Sprintf("URL '%s' was last seen %s ago by %s (%d total)", url, lastSeen, nick, count)
 		plugin.Conn(conn).Notice(dst, msg)
+	}
+}
+
+func handleCommand(conn *irc.Conn, db *sql.DB, line irc.Line, arg, dst string, isPrivate bool) {
+	if !isPrivate {
+		conn.Notice(dst, "urls: URL querying must be done over private messages")
+		return
+	}
+
+	arg = strings.TrimSpace(arg)
+
+	if arg == "help" {
+		conn.Notice(dst, fmt.Sprintf("urls: usage: %surls", command.CommandPrefix))
+		conn.Notice(dst, "urls: Prints the last 5 URLs seen in all channels")
+		return
+	}
+
+	sqlstr := "SELECT nick, src, timestamp, dst, url FROM seen GROUP BY url ORDER BY id DESC LIMIT ?"
+	n := 5
+	rows, err := db.Query(sqlstr, n)
+
+	if err != nil {
+		fmt.Println("error in !urls:", err)
+		conn.Notice(dst, "urls: Internal error occurred")
+		return
+	}
+
+	for rows.Next() {
+		reply := dst
+		var nick, src, dst, url string
+		var timestamp time.Time
+		if err = rows.Scan(&nick, &src, &timestamp, &dst, &url); err != nil {
+			fmt.Println("error in !urls:", err)
+			conn.Notice(dst, "urls: Internal error occurred")
+			rows.Close()
+			return
+		}
+		if nick == "" {
+			nick = src
+		}
+		timestr := timestamp.Format("01-02 15:04:05")
+		conn.Notice(reply, fmt.Sprintf("%s: %s: %s by %s", timestr, dst, url, nick))
+		n -= 1
+	}
+
+	if n > 0 {
+		conn.Notice(dst, "(no more URLs)")
 	}
 }
 
