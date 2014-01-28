@@ -87,7 +87,8 @@ func processTweetURL(conn plugin.IrcConn, line irc.Line, dst, username, tweet_id
 		if n.Type == html.ElementNode {
 			classes := utils.ClassMap(n)
 			if classes["tweet-text"] {
-				tweet.Tweet = utils.NodeString(n)
+				text := utils.NodeString(n)
+				tweet.Tweet = strings.Replace(text, "\u00A0", " ", -1)
 			} else if classes["tweet-timestamp"] {
 				tweet.Timestamp = utils.NodeAttr(n, "title")
 			} else if classes["original-tweet"] {
