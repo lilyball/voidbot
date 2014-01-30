@@ -16,7 +16,7 @@ func init() {
 	plugin.RegisterPlugin("stocks", plugin.Callbacks{Init: setup})
 }
 
-var stockRegex = regexp.MustCompile("\\$[A-Z]{1,4}(?:[A-Z]|\\.[A-Z]|\\.PK|SC|NM|'U)\\b")
+var stockRegex = regexp.MustCompile("\\$[A-Z]{1,5}\\b");
 
 type QueryResult struct {
 	Quotes []Quote `xml:"results>quote"`
