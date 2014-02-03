@@ -1,4 +1,4 @@
-package derpcoin
+package dogecoin
 
 import (
 	"../"
@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterPlugin("derpcoin", plugin.Callbacks{Init: setup})
+	plugin.RegisterPlugin("dogecoin", plugin.Callbacks{Init: setup})
 }
 
 var enabled = true
@@ -23,10 +23,10 @@ var btcRegex = regexp.MustCompile("(?i)(\\d+(?:\\.\\d*)?|\\.\\d+) ?btcs?\\b")
 
 func setup(reg *callback.Registry, config map[string]interface{}) error {
 	reg.AddCallback("COMMAND", func(conn *irc.Conn, line irc.Line, cmd string, arg string, reply string, isPrivate bool) {
-		if cmd == "derpcoin" && !isPrivate {
+		if cmd == "dogecoin" && !isPrivate {
 			arg = strings.ToLower(strings.TrimSpace(arg))
 			if arg == "" {
-				msg := "derpcoin is: "
+				msg := "dogecoin is: "
 				if enabled {
 					msg += "ON"
 				} else {
@@ -38,10 +38,10 @@ func setup(reg *callback.Registry, config map[string]interface{}) error {
 					plugin.Conn(conn).Notice(reply, "no")
 				} else if arg == "on" {
 					enabled = true
-					plugin.Conn(conn).Notice(reply, "derpcoin enabled")
+					plugin.Conn(conn).Notice(reply, "dogecoin enabled")
 				} else if arg == "off" {
 					enabled = false
-					plugin.Conn(conn).Notice(reply, "derpcoin disabled")
+					plugin.Conn(conn).Notice(reply, "dogecoin disabled")
 				}
 			} else {
 				plugin.Conn(conn).Notice(reply, "derp?")
@@ -50,7 +50,7 @@ func setup(reg *callback.Registry, config map[string]interface{}) error {
 	})
 	reg.AddCallback("PRIVMSG", func(conn *irc.Conn, line irc.Line, dst, text string) {
 		if enabled {
-			derptext := utils.ReplaceAllFold(text, "bitcoin", "derpcoin")
+			derptext := utils.ReplaceAllFold(text, "bitcoin", "dogecoin")
 			if derptext != "" {
 				plugin.Conn(conn).Notice(dst, derptext)
 				return
