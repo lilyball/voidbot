@@ -163,7 +163,7 @@ func processFlickrSet(conn plugin.IrcConn, line irc.Line, dst, set_id string) {
 }
 
 func callAPI(method, key, val string) (*http.Response, error) {
-	url := fmt.Sprintf("http://ycpi.api.flickr.com/services/rest/?method=%s&api_key=%s&%s=%s", method, api_key, key, val)
+	url := fmt.Sprintf("https://api.flickr.com/services/rest/?method=%s&api_key=%s&%s=%s", method, api_key, key, val)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
