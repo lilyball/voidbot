@@ -17,7 +17,7 @@ func init() {
 	plugin.RegisterPlugin("dogecoin", plugin.Callbacks{Init: setup})
 }
 
-var enabled = true
+var enabled = false
 
 var btcRegex = regexp.MustCompile("(?i)(\\d+(?:\\.\\d*)?|\\.\\d+) ?btcs?\\b")
 
